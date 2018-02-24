@@ -1,5 +1,7 @@
 # SSD: Single Shot MultiBox Detector in TensorFlow
 
+This project is originally from [here](https://github.com/balancap/SSD-Tensorflow). We have made adaptations for our own purposes.
+
 SSD is an unified framework for object detection with a single network. It has been originally introduced in this research [article](http://arxiv.org/abs/1512.02325).
 
 This repository contains a TensorFlow re-implementation of the original [Caffe code](https://github.com/weiliu89/caffe/tree/ssd). At present, it only implements VGG-based SSD networks (with 300 and 512 inputs), but the architecture of the project is modular, and should make easy the implementation and training of other SSD variants (ResNet or Inception based for instance). Present TF checkpoints have been directly converted from SSD Caffe models.
@@ -26,6 +28,17 @@ and then start a jupyter notebook with
 jupyter notebook notebooks/ssd_notebook.ipynb
 ```
 
+## Download
+```
+# in RelationalSSD/SSD-Tensorflow
+wget http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCtest_06-Nov-2007.tar
+# extract dataset
+mkdir VOC2007
+mv VOCdevkit/VOC2007/ VOC2007/test
+# clean up
+rm -rf VOCdevkit
+rm VOCtest_06-Nov-2007.tar
+```
 
 ## Datasets
 
@@ -36,7 +49,7 @@ OUTPUT_DIR=./tfrecords
 python tf_convert_data.py \
     --dataset_name=pascalvoc \
     --dataset_dir=${DATASET_DIR} \
-    --output_name=voc_2007_train \
+    --output_name=voc_2007_test \
     --output_dir=${OUTPUT_DIR}
 ```
 Note the previous command generated a collection of TF-Records instead of a single file in order to ease shuffling during training.
@@ -55,6 +68,7 @@ We are working hard at reproducing the same performance as the original [Caffe i
 
 After downloading and extracting the previous checkpoints, the evaluation metrics should be reproducible by running the following command:
 ```bash
+DATASET_DIR=./tfrecords/
 EVAL_DIR=./logs/
 CHECKPOINT_PATH=./checkpoints/VGG_VOC0712_SSD_300x300_ft_iter_120000.ckpt
 python eval_ssd_network.py \
