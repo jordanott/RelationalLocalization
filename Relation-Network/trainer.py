@@ -128,13 +128,13 @@ class Trainer(object):
         output_save_step = 1000
 
         for s in xrange(max_steps):
-            step, accuracy, summary, loss, step_time = self.run_single_step(self.batch_train, step=s, is_train=True)
+            step, accuracy, summary, loss, step_time, rloss, racc = self.run_single_step(self.batch_train, step=s, is_train=True)
 
             # periodic inference
             accuracy_test = self.run_test(self.batch_test, is_train=False)
 
-            if s % 10 == 0:
-                self.log_step_message(step, accuracy, accuracy_test, loss, step_time)
+            if s % 100 == 0:
+                self.log_step_message(step, accuracy, accuracy_test, loss, step_time, rloss, racc)
 
             self.summary_writer.add_summary(summary, global_step=step)
 
@@ -151,7 +151,7 @@ class Trainer(object):
         batch_chunk = self.session.run(batch)
 
         fetch = [self.global_step, self.model.accuracy, self.summary_op,
-                 self.model.loss, self.check_op, self.optimizer]
+                 self.model.loss,self.model.regression_loss, self.model.regression_accuracy, self.check_op, self.optimizer]
 
         try:
             if step is not None and (step % 100 == 0):
@@ -162,7 +162,8 @@ class Trainer(object):
         fetch_values = self.session.run(
             fetch, feed_dict=self.model.get_feed_dict(batch_chunk, step=step)
         )
-        [step, accuracy, summary, loss] = fetch_values[:4]
+
+        [step, accuracy, summary, loss, rloss, racc] = fetch_values[:6]
 
         try:
             if self.plot_summary_op in fetch:
@@ -172,7 +173,7 @@ class Trainer(object):
 
         _end_time = time.time()
 
-        return step, accuracy, summary, loss,  (_end_time - _start_time)
+        return step, accuracy, summary, loss,  (_end_time - _start_time), rloss, racc
 
     def run_test(self, batch, is_train=False, repeat_times=8):
 
@@ -184,7 +185,7 @@ class Trainer(object):
 
         return accuracy_test
 
-    def log_step_message(self, step, accuracy, accuracy_test, loss, step_time, is_train=True):
+    def log_step_message(self, step, accuracy, accuracy_test, loss, step_time, rloss, racc, is_train=True):
         if step_time == 0:
             step_time = 0.001
         log_fn = (is_train and log.info or log.infov)
@@ -192,14 +193,18 @@ class Trainer(object):
                 "Loss: {loss:.5f} " +
                 "Accuracy test: {accuracy:.2f} "
                 "Accuracy test: {accuracy_test:.2f} " +
-                "({sec_per_batch:.3f} sec/batch, {instance_per_sec:.3f} instances/sec) "
+                "({sec_per_batch:.3f} sec/batch, {instance_per_sec:.3f} instances/sec) " +
+                "rLoss: {rloss} " +
+                "rAcc: {racc}"
                 ).format(split_mode=(is_train and 'train' or 'val'),
                          step=step,
                          loss=loss,
                          accuracy=accuracy*100,
                          accuracy_test=accuracy_test*100,
                          sec_per_batch=step_time,
-                         instance_per_sec=self.batch_size / step_time
+                         instance_per_sec=self.batch_size / step_time,
+                         rloss=rloss,
+                         racc=racc
                          )
                )
 

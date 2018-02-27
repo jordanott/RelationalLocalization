@@ -93,32 +93,32 @@ def generator(config):
                 A[i*NUM_Q, NUM_COLOR] = True
             else:
                 A[i*NUM_Q, NUM_COLOR+1] = True
-            L[i*NUM_Q] = [rep.x[i],rep.y[i]]
+            L[i*NUM_Q] = [rep.x[i]/float(img_size),rep.y[i]/float(img_size)]
 
             # Q2: bottom?
             if rep.y[i] > int(img_size/2):
                 A[i*NUM_Q+1, NUM_COLOR+2] = True
             else:
                 A[i*NUM_Q+1, NUM_COLOR+3] = True
-            L[i*NUM_Q+1] = [rep.x[i],rep.y[i]]
+            L[i*NUM_Q+1] = [rep.x[i]/float(img_size),rep.y[i]/float(img_size)]
 
             # Q3: left?
             if rep.x[i] < int(img_size/2):
                 A[i*NUM_Q+2, NUM_COLOR+2] = True
             else:
                 A[i*NUM_Q+2, NUM_COLOR+3] = True
-            L[i*NUM_Q+2] = [rep.x[i],rep.y[i]]
+            L[i*NUM_Q+2] = [rep.x[i]/float(img_size),rep.y[i]/float(img_size)]
 
             distance = 1.1*(rep.y - rep.y[i]) ** 2 + (rep.x - rep.x[i]) ** 2
             idx = distance.argsort()
             # Q4: the color of the nearest object
             min_idx = idx[1]
             A[i*NUM_Q+3, rep.color[min_idx]] = True
-            L[i*NUM_Q+3] = [rep.x[min_idx],rep.y[min_idx]]
+            L[i*NUM_Q+3] = [rep.x[min_idx]/float(img_size),rep.y[min_idx]/float(img_size)]
             # Q5: the color of the farthest object
             max_idx = idx[-1]
             A[i*NUM_Q+4, rep.color[max_idx]] = True
-            L[i*NUM_Q+4] = [rep.x[max_idx],rep.y[max_idx]]
+            L[i*NUM_Q+4] = [rep.x[max_idx]/float(img_size),rep.y[max_idx]/float(img_size)]
         return A,L
 
     # output files
