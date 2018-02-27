@@ -1,4 +1,5 @@
 # Relation Networks and Sort-of-CLEVR in Tensorflow
+This project is originally from [here](https://github.com/gitlimlab/Relation-Network-Tensorflow). We have made adaptations for our own purposes.
 
 As part of the implementation series of [Joseph Lim's group at USC](http://csail.mit.edu/~lim), our motivation is to accelerate (or sometimes delay) research in the AI community by promoting open-source projects. To this end, we implement state-of-the-art research papers, and publicly share them with concise reports. Please visit our [group github site](https://github.com/gitlimlab) for other projects.
 
@@ -21,11 +22,11 @@ where *o* represents inidividual object while *f* and *g* are functions dealing 
     <img src="figure/RN.png" height="350"/>
 </p>
 
-In addition to the RN model, **a baseline model** which consists of convolutional layers followed by MLPs is also provided in this implementation. 
+In addition to the RN model, **a baseline model** which consists of convolutional layers followed by MLPs is also provided in this implementation.
 
 ### Sort-of-CLEVR
 
-To verify the effectiveness of RNs, a synthesized **VQA dataset** is proposed in the paper named Sort-of-CLEVR. The dataset consists of paired questions and answers as well as images containing colorful shapes. 
+To verify the effectiveness of RNs, a synthesized **VQA dataset** is proposed in the paper named Sort-of-CLEVR. The dataset consists of paired questions and answers as well as images containing colorful shapes.
 
 Each **image** has a number of shapes (rectangle or circle) which have different colors (red, blue, green, yellow, cyan,  or magenta). Here are some examples of images.
 
@@ -104,7 +105,7 @@ $ python trainer.py
 Or specify your own settings:
 
 ```bash
-$ python trainer.py --model baseline --dataset_path Sort-of-CLEVR_xyz --batch_size 64 --learning_rate 1e-4 --lr_weight_decay 
+$ python trainer.py --model baseline --dataset_path Sort-of-CLEVR_xyz --batch_size 64 --learning_rate 1e-4 --lr_weight_decay
 ```
 
 During the training phase, the samples including images, questions, ground truth answers, and predicted answers can be monitored on Tensorboard if the library [Tensorflow Plot](https://github.com/wookayin/tensorflow-plot) is installed. Here is an example.
@@ -125,7 +126,7 @@ Please note that *ckpt_dir* should be like: ```train_dir/baseline-Sort-of-CLEVR_
 
 ## Results
 
-Both **the baseline model** and **the RN model** were tested on **three Sort-of-CLEVR datasets** which have 2, 4, or 6 shapes in each image, respectively. 
+Both **the baseline model** and **the RN model** were tested on **three Sort-of-CLEVR datasets** which have 2, 4, or 6 shapes in each image, respectively.
 
 ### Training
 
@@ -191,7 +192,7 @@ Models trained on 4-shape dataset and tested on 2-shape dataset
 
 ## Related works
 
-* [A Simple Neural Network Module for Relational Reasoning](https://arxiv.org/abs/1706.01427) by 
+* [A Simple Neural Network Module for Relational Reasoning](https://arxiv.org/abs/1706.01427) by
 * [Visual Interaction Networks](https://arxiv.org/abs/1706.01433) by Watters et. al.
 * [Interaction networks for learning about objects, relations and physics](https://arxiv.org/abs/1612.00222) by Battaglia et. al.
 * My implementation of [Semi-supervised learning GAN](https://github.com/gitlimlab/SSGAN-Tensorflow)
