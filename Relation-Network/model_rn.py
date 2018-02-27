@@ -72,9 +72,10 @@ class Model(object):
             # Cross-entropy loss
             loss = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=labels)
             # regression loss
-            rloss = tf.losses.mean_squared_error(rlabels,rpred)
+            #rloss = tf.losses.mean_squared_error(rlabels,rpred)
+            rloss = tf.reduce_sum(tf.pow(rpred - rlabels, 2)) / (2*float(self.batch_size))
             # regression accuracy
-            regression_accuracy = tf.reduce_sum(tf.pow(rpred - rlabels, 2))
+            regression_accuracy = tf.reduce_sum(tf.pow(rpred - rlabels, 2)) / (2*float(self.batch_size))
             # Classification accuracy
             correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(labels, 1))
             accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))

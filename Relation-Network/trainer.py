@@ -80,6 +80,15 @@ class Trainer(object):
             name='optimizer_loss'
         )
 
+        self.roptimizer = tf.contrib.layers.optimize_loss(
+            loss=self.model.regression_loss,
+            global_step=self.global_step,
+            learning_rate=self.learning_rate,
+            optimizer=tf.train.AdamOptimizer,
+            clip_gradients=20.0,
+            name='roptimizer_loss'
+        )
+
         self.summary_op = tf.summary.merge_all()
         try:
             import tfplot
@@ -151,7 +160,8 @@ class Trainer(object):
         batch_chunk = self.session.run(batch)
 
         fetch = [self.global_step, self.model.accuracy, self.summary_op,
-                 self.model.loss,self.model.regression_loss, self.model.regression_accuracy, self.check_op, self.optimizer]
+                 self.model.loss,self.model.regression_loss, self.model.regression_accuracy,
+                 self.check_op, self.optimizer, self.roptimizer]
 
         try:
             if step is not None and (step % 100 == 0):
