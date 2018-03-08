@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-import cv2
 
 text_questions = {
     1:'Where is {oi}?',

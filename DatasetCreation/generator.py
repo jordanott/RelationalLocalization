@@ -1,5 +1,6 @@
 from keras.preprocessing.image import load_img
 from visualize import visualize_qa
+import progressbar
 import h5py
 import json
 import numpy as np
@@ -36,6 +37,19 @@ def get_qa():
     return question_array,answer_array
 
 data= json.load(open('objects.json'))
+
+dataset_size = len(data)
+count = 0
+question_count = 0
+image_count = 0
+f = h5py.File('data.hy', 'w')
+id_file = open('id.txt', 'w')
+
+# progress bar
+bar = progressbar.ProgressBar(maxval=100,
+                              widgets=[progressbar.Bar('=', '[', ']'), ' ',
+                                       progressbar.Percentage()])
+bar.start()
 
 for img_data in data:
     # setting ID of image
@@ -77,12 +91,11 @@ for img_data in data:
         prev_h,prev_w,_ = img.shape
         img = np.array(load_img(complete_location,target_size=TARGET_IMG_SIZE))
 
-    print 'prev',prev_h,prev_w
+    # print 'prev',prev_h,prev_w
     scipy.misc.imsave('images/'+str(image_id)+'.jpg', img)
-    import pprint
-
-    pp = pprint.PrettyPrinter(indent=4)
-    pp.pprint(objects_freq)
+    #import pprint
+    #pp = pprint.PrettyPrinter(indent=4)
+    #pp.pprint(objects_freq)
     for obj in objects_freq:
         # resizing coordinates
         for i in range(len(object_coordinates[obj])):
@@ -105,7 +118,7 @@ for img_data in data:
             question_answer['questions'].append(q)
             question_answer['answers'].append(a)
             question_answer['locations'].append(object_coordinates[obj][0])
-            visualize_qa(1,obj,object_coordinates[obj][0],img,obj)
+            #visualize_qa(1,obj,object_coordinates[obj][0],img,obj)
             # question 2
             q,a = get_qa()
             x,y,_,_ = object_coordinates[obj][0]
@@ -114,10 +127,10 @@ for img_data in data:
             q[questions[2]] = 1
             if x < 200:
                 a[-2] = 1
-                visualize_qa(2,'yes',object_coordinates[obj][0],img,obj)
+                #visualize_qa(2,'yes',object_coordinates[obj][0],img,obj)
             else:
                 a[-1] = 1
-                visualize_qa(2,'no',object_coordinates[obj][0],img,obj)
+                #visualize_qa(2,'no',object_coordinates[obj][0],img,obj)
             question_answer['questions'].append(q)
             question_answer['answers'].append(a)
             question_answer['locations'].append(object_coordinates[obj][0])
@@ -148,7 +161,7 @@ for img_data in data:
                     question_answer['questions'].append(q)
                     question_answer['answers'].append(a)
                     question_answer['locations'].append(obj_2_coords[min_idx].tolist())
-                    visualize_qa(7,obj_2,obj_2_coords[min_idx].tolist(),img,obj_2,obj)
+                    #visualize_qa(7,obj_2,obj_2_coords[min_idx].tolist(),img,obj_2,obj)
 
                     # question 8
                     q,a = get_qa()
@@ -161,7 +174,7 @@ for img_data in data:
                     question_answer['questions'].append(q)
                     question_answer['answers'].append(a)
                     question_answer['locations'].append(obj_2_coords[max_idx].tolist())
-                    visualize_qa(8,obj_2,obj_2_coords[max_idx].tolist(),img,obj_2,obj)
+                    #visualize_qa(8,obj_2,obj_2_coords[max_idx].tolist(),img,obj_2,obj)
                 # question 5 and 6
                 elif obj_2 != obj:
                     obj_2_coords = np.array(object_coordinates[obj_2])
@@ -188,7 +201,7 @@ for img_data in data:
                 question_answer['questions'].append(q)
                 question_answer['answers'].append(a)
                 question_answer['locations'].append(min_dist_coords)
-                visualize_qa(5,min_dist_obj,min_dist_coords,img,obj)
+                #visualize_qa(5,min_dist_obj,min_dist_coords,img,obj)
             # question 6
             if max_dist_obj:
                 q,a = get_qa()
@@ -200,7 +213,7 @@ for img_data in data:
                 question_answer['questions'].append(q)
                 question_answer['answers'].append(a)
                 question_answer['locations'].append(max_dist_coords)
-                visualize_qa(6,max_dist_obj,max_dist_coords,img,obj)
+                #visualize_qa(6,max_dist_obj,max_dist_coords,img,obj)
 
         for obj_2 in objects_freq:
             if obj_2 == obj:
@@ -217,10 +230,10 @@ for img_data in data:
                 obj_2_x = object_coordinates[obj_2][0][0]
                 if obj_x < obj_2_x:
                     a[-2] = 1
-                    visualize_qa(3,'yes',object_coordinates[obj][0],img,obj,obj_2)
+                    #visualize_qa(3,'yes',object_coordinates[obj][0],img,obj,obj_2)
                 else:
                     a[-1] = 1
-                    visualize_qa(3,'no',object_coordinates[obj][0],img,obj,obj_2)
+                    #visualize_qa(3,'no',object_coordinates[obj][0],img,obj,obj_2)
                 question_answer['questions'].append(q)
                 question_answer['answers'].append(a)
                 question_answer['locations'].append(object_coordinates[obj][0])
@@ -250,11 +263,24 @@ for img_data in data:
                     question_answer['questions'].append(q)
                     question_answer['answers'].append(a)
                     question_answer['locations'].append(object_coordinates[middle_obj][0])
-                    visualize_qa(4,middle_obj,object_coordinates[middle_obj][0],img,left_obj,right_obj)
+                    #visualize_qa(4,middle_obj,object_coordinates[middle_obj][0],img,left_obj,right_obj)
+    if len(question_answer['questions']):
+        image_count += 1
+        question_count += len(question_answer['questions'])
+        id = '{}'.format(image_id)
+        grp = f.create_group(id)
+        id_file.write(id+'\n')
+        #grp['image'] = I
+        grp['question'] = question_answer['questions']
+        grp['answer'] = question_answer['answers']
+        grp['location'] = question_answer['locations']
 
+    count += 1
+    if count % (dataset_size / 100) == 0:
+        bar.update(count / (dataset_size / 100))
+    if count >= dataset_size:
+        bar.finish()
+        f.close()
+        id_file.close()
 
-grp = f.create_group(id)
-grp['image'] = I
-grp['question'] = Q[j, :]
-grp['answer'] = A[j, :]
-grp['location'] = L[j, :]
+print 'Images:',image_count,'Questions: ',question_count
