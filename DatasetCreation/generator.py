@@ -32,7 +32,7 @@ QUESTION_OFFSET = len(desired_objects)
 def get_qa():
     # car,chair,door,leaves,light,person,plate,pole,shirt,sign,table,train,tree,trees,wall,window,yes, no,
     answer_array = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-    # objects (0-15), subject (16-31), question (32-39)
+    # objects (0-14), subject (15-30), question (31-38)
     question_array = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     return question_array,answer_array
 
@@ -278,9 +278,10 @@ for img_data in data:
     count += 1
     if count % (dataset_size / 100) == 0:
         bar.update(count / (dataset_size / 100))
-    if count >= dataset_size:
+    if count == 10:#count >= dataset_size:
         bar.finish()
         f.close()
         id_file.close()
+        break
 
 print 'Images:',image_count,'Questions: ',question_count
