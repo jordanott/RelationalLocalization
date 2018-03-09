@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-
+from keras.preprocessing.image import load_img
 import os.path
 import numpy as np
 import h5py
@@ -35,7 +35,9 @@ class Dataset(object):
 
     def get_data(self, id):
         # preprocessing and data augmentation
-        img = self.data[id]['image'].value/255.
+        #img = self.data[id]['image'].value/255.
+        img = np.array(load_img('../DatasetCreation/images/'+id+'.jpg'))
+        print (img.shape)
         q = self.data[id]['question'].value.astype(np.float32)
         a = self.data[id]['answer'].value.astype(np.float32)
         l = self.data[id]['location'].value.astype(np.float32)
@@ -56,7 +58,8 @@ class Dataset(object):
 
 
 def get_data_info():
-    return np.array([128, 128, 3, 11, 10])
+    # img height, img width, channels, questions, answer
+    return np.array([400, 400, 3, 38, 17])
 
 
 def get_conv_info():

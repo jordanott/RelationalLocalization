@@ -234,12 +234,12 @@ def main():
     parser.add_argument('--model', type=str, default='rn', choices=['rn', 'baseline'])
     parser.add_argument('--prefix', type=str, default='default')
     parser.add_argument('--checkpoint', type=str, default=None)
-    parser.add_argument('--dataset_path', type=str, default='Sort-of-CLEVR_default')
+    parser.add_argument('--dataset_path', type=str, default='')
     parser.add_argument('--learning_rate', type=float, default=2.5e-4)
     parser.add_argument('--lr_weight_decay', action='store_true', default=False)
     config = parser.parse_args()
 
-    path = os.path.join('./datasets', config.dataset_path)
+    path = os.path.join('../DatasetCreation/VG/', config.dataset_path)
 
     if check_data_path(path):
         import sort_of_clevr as dataset
@@ -250,8 +250,7 @@ def main():
     config.conv_info = dataset.get_conv_info()
     dataset_train, dataset_test = dataset.create_default_splits(path)
 
-    trainer = Trainer(config,
-                      dataset_train, dataset_test)
+    trainer = Trainer(config, dataset_train, dataset_test)
 
     log.warning("dataset: %s, learning_rate: %f",
                 config.dataset_path, config.learning_rate)
