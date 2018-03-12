@@ -36,7 +36,8 @@ class Dataset(object):
     def get_data(self, id):
         # preprocessing and data augmentation
         #img = self.data[id]['image'].value/255.
-        img = np.array(load_img('../DatasetCreation/images/'+id+'.jpg'))
+        img_name = self.data[id]['image'].value
+        img = np.array(load_img('../DatasetCreation/images/'+img_name))
         print (img.shape)
         q = self.data[id]['question'].value.astype(np.float32)
         a = self.data[id]['answer'].value.astype(np.float32)

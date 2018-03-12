@@ -42,8 +42,8 @@ dataset_size = len(data)
 count = 0
 question_count = 0
 image_count = 0
-f = h5py.File('data.hy', 'w')
-id_file = open('id.txt', 'w')
+f = h5py.File('VG/data.hy', 'w')
+id_file = open('VG/id.txt', 'w')
 
 # progress bar
 bar = progressbar.ProgressBar(maxval=100,
@@ -266,14 +266,15 @@ for img_data in data:
                     #visualize_qa(4,middle_obj,object_coordinates[middle_obj][0],img,left_obj,right_obj)
     if len(question_answer['questions']):
         image_count += 1
-        question_count += len(question_answer['questions'])
-        id = '{}'.format(image_id)
-        grp = f.create_group(id)
-        id_file.write(id+'\n')
-        #grp['image'] = I
-        grp['question'] = question_answer['questions']
-        grp['answer'] = question_answer['answers']
-        grp['location'] = question_answer['locations']
+        for i in range(len(question_answer['questions'])):
+            id = '{}'.format(question_count)
+            grp = f.create_group(id)
+            id_file.write(id+'\n')
+            grp['image'] = '{}.jpg'.format(image_id)
+            grp['question'] = question_answer['questions'][i]
+            grp['answer'] = question_answer['answers'][i]
+            grp['location'] = question_answer['locations'][i]
+            question_count += 1
 
     count += 1
     if count % (dataset_size / 100) == 0:

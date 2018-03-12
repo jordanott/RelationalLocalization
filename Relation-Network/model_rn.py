@@ -28,7 +28,7 @@ class Model(object):
         self.c_dim = self.config.data_info[2]
         self.q_dim = self.config.data_info[3]
         self.a_dim = self.config.data_info[4]
-        self.l_dim = 2 # (x,y)
+        self.l_dim = 4 # (x,y,h,w)
         self.conv_info = self.config.conv_info
 
         # create placeholders for the input
