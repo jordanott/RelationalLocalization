@@ -276,13 +276,14 @@ for img_data in data:
             grp['answer'] = question_answer['answers'][i]
             grp['location'] = question_answer['locations'][i]
             question_count += 1
-            img_store = np.append(img_store,img.reshape(1,400,400,3),axis=0)
+
             _coords = np.array(question_answer['locations'][i]).reshape(1,4)
             coords_store = np.append(coords_store,_coords,axis=0)
+        img_store = np.append(img_store,img.reshape(1,400,400,3),axis=0)
     count += 1
     if count % (dataset_size / 100) == 0:
         bar.update(count / (dataset_size / 100))
-    if count == 10:#count >= dataset_size:
+    if count >= dataset_size:
         bar.finish()
         f.close()
         id_file.close()
