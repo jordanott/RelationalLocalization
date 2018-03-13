@@ -32,16 +32,27 @@ class Dataset(object):
         except:
             raise IOError('Dataset not found. Please make sure the dataset was downloaded.')
         log.info("Reading Done: %s", file)
+        # load data info
+        mean_std = np.load('../DatasetCreation/VG/mean_std.npz')
+        self.img_mean = mean_std['img_mean']
+        self.img_std = mean_std['img_std']
+        self.coords_mean = mean_std['coords_mean']
+        self.coords_std = mean_std['coords_std']
 
     def get_data(self, id):
         # preprocessing and data augmentation
-        #img = self.data[id]['image'].value/255.
         img_name = self.data[id]['image'].value
+        # load image
         img = np.array(load_img('../DatasetCreation/images/'+img_name))
-        print (img.shape)
+        # normalize images
+        img -= self.img_mean
+        img /= self.img_std
         q = self.data[id]['question'].value.astype(np.float32)
         a = self.data[id]['answer'].value.astype(np.float32)
         l = self.data[id]['location'].value.astype(np.float32)
+        # normalize coordinates
+        l -= self.coords_mean
+        l /= self.coords_std
         return img, q, a, l
 
     @property

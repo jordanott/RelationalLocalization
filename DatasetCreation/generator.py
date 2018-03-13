@@ -50,7 +50,8 @@ bar = progressbar.ProgressBar(maxval=100,
                               widgets=[progressbar.Bar('=', '[', ']'), ' ',
                                        progressbar.Percentage()])
 bar.start()
-
+img_store = np.empty((1,400,400,3))
+coords_store = np.empty((1,4))
 for img_data in data:
     # setting ID of image
     image_id = img_data['image_id']
@@ -275,7 +276,9 @@ for img_data in data:
             grp['answer'] = question_answer['answers'][i]
             grp['location'] = question_answer['locations'][i]
             question_count += 1
-
+            img_store = np.append(img_store,img.reshape(1,400,400,3),axis=0)
+            _coords = np.array(question_answer['locations'][i]).reshape(1,4)
+            coords_store = np.append(coords_store,_coords,axis=0)
     count += 1
     if count % (dataset_size / 100) == 0:
         bar.update(count / (dataset_size / 100))
@@ -286,3 +289,12 @@ for img_data in data:
         break
 
 print 'Images:',image_count,'Questions: ',question_count
+img_store = np.delete(img_store,0,0)
+mean = np.mean(img_store,axis=(0,1,2))
+std = np.std(img_store,axis=(0,1,2))
+
+coords_store = np.delete(coords_store,0,0)
+c_mean = np.mean(coords_store,axis=0)
+c_std = np.std(coords_store,axis=0)
+
+np.savez('VG/mean_std',img_mean=mean,img_std=std,coords_mean=c_mean,coords_std=c_std)
