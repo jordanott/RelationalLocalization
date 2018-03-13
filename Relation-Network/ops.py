@@ -22,7 +22,7 @@ def huber_loss(labels, predictions, delta=1.0):
     large_res = delta * residual - 0.5 * tf.square(delta)
     return tf.where(condition, small_res, large_res)
 
-def max_pool(self, bottom, name):
+def max_pool(bottom, name):
     return tf.nn.max_pool(bottom, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME', name=name)
 
 def conv2d(input, output_shape, is_train, activation_fn=tf.nn.relu,
