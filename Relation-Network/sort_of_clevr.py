@@ -64,7 +64,8 @@ def get_data_info():
 
 
 def get_conv_info():
-    return np.array([24, 24, 24, 24])
+    # changed from -> np.array([24, 24, 24, 24])
+    return np.array([64, 128, 256, 512, 512])
 
 
 def create_default_splits(path, is_train=True):
