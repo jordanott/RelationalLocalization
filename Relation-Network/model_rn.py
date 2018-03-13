@@ -75,6 +75,7 @@ class Model(object):
             #rloss = tf.losses.mean_squared_error(rlabels,rpred)
             rloss = tf.reduce_sum(tf.pow(rpred - rlabels, 2)) / (2*float(self.batch_size))
             # regression accuracy
+            #regression_accuracy,_ = tf.metrics.mean_iou(rlabels,rpred,1)
             regression_accuracy = tf.reduce_sum(tf.pow(rpred - rlabels, 2)) / (2*float(self.batch_size))
             # Classification accuracy
             correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(labels, 1))
@@ -156,11 +157,22 @@ class Model(object):
             with tf.variable_scope(scope) as scope:
                 log.warn(scope.name)
                 fc_1 = fc(g, 256, name='fc_1')
-                fc_2 = fc(fc_1, 256, name='fc_2')
-                fc_2 = slim.dropout(fc_2, keep_prob=0.5, is_training=is_train, scope='fc_3/')
-                fc_3 = fc(fc_2, n, activation_fn=None, name='fc_3')
-                rfc_3 = fc(fc_2, self.l_dim, activation_fn=None, name='pred_x_y')
-                return fc_3,rfc_3
+                fc_1 = slim.dropout(fc_1, keep_prob=0.5, is_training=is_train, scope='fc_2/')
+
+                fc_a_2 = fc(fc_1, 256, name='fc_a_2')
+                fc_a_2 = slim.dropout(fc_a_2, keep_prob=0.5, is_training=is_train, scope='fc_a_3/')
+                fc_a_3 = fc(fc_a_2, 256, name='fc_a_3')
+                fc_a_3 = slim.dropout(fc_a_3, keep_prob=0.5, is_training=is_train, scope='fc_a_4/')
+                fc_a_4 = fc(fc_a_3, n, activation_fn=None, name='fc_a_4')
+
+
+                fc_r_2 = fc(fc_1, 256, name='fc_r_2')
+                fc_r_2 = slim.dropout(fc_r_2, keep_prob=0.5, is_training=is_train, scope='fc_r_3/')
+                fc_r_3 = fc(fc_r_2, 256, name='fc_r_3')
+                fc_r_3 = slim.dropout(fc_r_3, keep_prob=0.5, is_training=is_train, scope='fc_r_4/')
+                rfc_3 = fc(fc_r_3, self.l_dim, activation_fn=None, name='pred_x_y')
+
+                return fc_a_4,rfc_3
 
         g = CONV(self.img, self.q, scope='CONV')
         logits,rpred = f_phi(g, scope='f_phi')
