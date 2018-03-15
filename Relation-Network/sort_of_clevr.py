@@ -43,7 +43,7 @@ class Dataset(object):
         # preprocessing and data augmentation
         img_name = self.data[id]['image'].value
         # load image
-        img = np.array(load_img('../DatasetCreation/images/'+img_name))
+        img = np.array(load_img('../DatasetCreation/images/'+img_name)).astype(np.float64)
         # normalize images
         img -= self.img_mean
         img /= self.img_std

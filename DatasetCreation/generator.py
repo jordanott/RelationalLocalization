@@ -1,5 +1,5 @@
 from keras.preprocessing.image import load_img
-from visualize import visualize_qa
+#from visualize import visualize_qa
 import progressbar
 import h5py
 import json
@@ -36,22 +36,27 @@ def get_qa():
     question_array = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     return question_array,answer_array
 
-data= json.load(open('objects.json'))
+data= json.load(open('RelationalLocalization/DatasetCreation/objects.json'))
 
 dataset_size = len(data)
 count = 0
 question_count = 0
 image_count = 0
-f = h5py.File('VG/data.hy', 'w')
-id_file = open('VG/id.txt', 'w')
+f = h5py.File('data.hy', 'w')
+id_file = open('id.txt', 'w')
 
 # progress bar
 bar = progressbar.ProgressBar(maxval=100,
                               widgets=[progressbar.Bar('=', '[', ']'), ' ',
                                        progressbar.Percentage()])
 bar.start()
-img_store = np.empty((1,400,400,3))
+#img_store = np.empty((1,400,400,3))
 coords_store = np.empty((1,4))
+total_image = np.zeros((400,400,3))
+
+ms = np.load('img_mean_coords_mean_std.npz')
+mean_img = ms['img_mean']
+
 for img_data in data:
     # setting ID of image
     image_id = img_data['image_id']
@@ -81,13 +86,13 @@ for img_data in data:
     question_answer = {'questions':[],'answers':[],'locations':[]}
 
     # load img, get size of original
-    complete_location = '../../VG_100K/'+str(image_id)+'.jpg'
+    complete_location = 'VG_100K/'+str(image_id)+'.jpg'
     if os.path.isfile(complete_location):
         img = np.array(load_img(complete_location))
         prev_h,prev_w,_ = img.shape
         img = np.array(load_img(complete_location,target_size=TARGET_IMG_SIZE))
     else:
-        complete_location = '../../VG_100K_2/'+str(image_id)+'.jpg'
+        complete_location = 'VG_100K_2/'+str(image_id)+'.jpg'
         img = np.array(load_img(complete_location))
         prev_h,prev_w,_ = img.shape
         img = np.array(load_img(complete_location,target_size=TARGET_IMG_SIZE))
@@ -279,7 +284,8 @@ for img_data in data:
 
             _coords = np.array(question_answer['locations'][i]).reshape(1,4)
             coords_store = np.append(coords_store,_coords,axis=0)
-        img_store = np.append(img_store,img.reshape(1,400,400,3),axis=0)
+        #img_store = np.append(img_store,img.reshape(1,400,400,3),axis=0)
+        total_image += img
     count += 1
     if count % (dataset_size / 100) == 0:
         bar.update(count / (dataset_size / 100))
@@ -290,12 +296,39 @@ for img_data in data:
         break
 
 print 'Images:',image_count,'Questions: ',question_count
-img_store = np.delete(img_store,0,0)
-mean = np.mean(img_store,axis=(0,1,2))
-std = np.std(img_store,axis=(0,1,2))
+
+#img_store = np.delete(img_store,0,0)
+mean = total_image/float(image_count) #np.mean(img_store,axis=(0,1,2))
+#std = np.std(img_store,axis=(0,1,2))
 
 coords_store = np.delete(coords_store,0,0)
 c_mean = np.mean(coords_store,axis=0)
 c_std = np.std(coords_store,axis=0)
 
-np.savez('VG/mean_std',img_mean=mean,img_std=std,coords_mean=c_mean,coords_std=c_std)
+np.savez('img_mean_coords_mean_std',img_mean=mean,coords_mean=c_mean,coords_std=c_std)
+
+from keras.preprocessing.image import load_img
+import numpy as np
+import h5py
+
+data = np.load('img_mean_coords_mean_std.npz')
+img_mean, coords_mean, coords_std = data['img_mean'],data['coords_mean'],data['coords_std']
+
+mean = np.sum(img_mean,axis=(0,1))/float(400**2)
+print mean
+store = np.zeros(3)
+seen_img = {}
+f = h5py.File('data.hy', 'r')
+with open('id.txt','r') as ids:
+	for line in ids:
+		ID = line.strip()
+		img_id = f[ID]['image'].value
+		if img_id not in seen_img:
+			seen_img[img_id] = 1
+			img = np.array(load_img('images/'+img_id))
+			diff = np.sum(img-mean,axis=(0,1))/float(400**2)
+			store += diff*diff
+
+std = np.sqrt(store/float(len(store)-1))
+print std
+np.savez('img_mean_std_coords_mean_std',img_mean=mean,img_std=std,coords_mean=coords_mean,coords_std=coords_std)

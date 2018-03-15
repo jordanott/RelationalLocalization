@@ -137,6 +137,7 @@ class Model(object):
                 # conv_4 [B, d, d, k]
                 d = pool5.get_shape().as_list()[1]
                 all_g = []
+                print ('G theta num:'+str(d*d))
                 for i in range(d*d):
                     o_i = pool5[:, int(i / d), int(i % d), :]
                     o_i = concat_coor(o_i, i, d)
