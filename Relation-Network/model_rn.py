@@ -104,14 +104,14 @@ class Model(object):
             with tf.variable_scope(scope) as scope:
                 log.warn(scope.name)
                 '''
-                conv_1 = conv2d(img, conv_info[0], is_train, s_h=1, s_w=1, name='conv_1')
+                conv_1 = conv2d(img, conv_info[0], is_train, s_h=3, s_w=1, name='conv_1')
                 conv_2 = conv2d(conv_1, conv_info[1], is_train, s_h=1, s_w=1, name='conv_2')
                 conv_3 = conv2d(conv_2, conv_info[2], is_train, name='conv_3')
                 conv_4 = conv2d(conv_3, conv_info[3], is_train, name='conv_4')
                 '''
                 ## VGG
-                conv_1_1 = conv2d(img, conv_info[0], is_train, name='conv_1_1')
-                conv_1_2 = conv2d(conv_1_1, conv_info[0], is_train, name='conv_1_2')
+                conv_1_1 = conv2d(img, conv_info[0],is_train, k_h=5,k_w=5,s_w=2,s_h=2, name='conv_1_1')
+                conv_1_2 = conv2d(conv_1_1, conv_info[0], is_train, k_h=5,k_w=5,s_w=2,s_h=2, name='conv_1_2')
                 pool1 = max_pool(conv_1_2,'pool1')
 
                 conv_2_1 = conv2d(pool1, conv_info[1], is_train, name='conv_2_1')
@@ -129,9 +129,9 @@ class Model(object):
                 pool4 = max_pool(conv_4_3,'pool4')
 
                 conv_5_1 = conv2d(pool4, conv_info[4], is_train, name='conv_5_1')
-                conv_5_2 = conv2d(conv_5_1, conv_info[4], is_train, name='conv_5_2')
-                conv_5_3 = conv2d(conv_5_2, conv_info[4], is_train, name='conv_5_3')
-                pool5 = max_pool(conv_5_3,'pool5')
+                #conv_5_2 = conv2d(conv_5_1, conv_info[4], is_train, name='conv_5_2')
+                #conv_5_3 = conv2d(conv_5_2, conv_info[4], is_train, name='conv_5_3')
+                pool5 = max_pool(conv_5_1,'pool5')
                 # eq.1 in the paper
                 # g_theta = (o_i, o_j, q)
                 # conv_4 [B, d, d, k]
