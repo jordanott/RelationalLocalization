@@ -71,6 +71,7 @@ class Model(object):
         def build_loss(logits, labels, rpred, rlabels):
             # Cross-entropy loss
             loss = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=labels)
+            loss = tf.reduce_mean(loss)
             # regression loss
             #rloss = tf.losses.mean_squared_error(rlabels,rpred)
             rloss = tf.reduce_sum(tf.pow(rpred - rlabels, 2)) / (2*float(self.batch_size))
@@ -82,7 +83,7 @@ class Model(object):
             # joint loss
             joint_loss = loss + rloss
 
-            return tf.reduce_mean(loss), accuracy, rloss, regression_accuracy, joint_loss
+            return loss, accuracy, rloss, regression_accuracy, joint_loss
         # }}}
 
         def concat_coor(o, i, d):
