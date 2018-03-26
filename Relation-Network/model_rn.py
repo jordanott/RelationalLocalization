@@ -74,14 +74,15 @@ class Model(object):
             # regression loss
             #rloss = tf.losses.mean_squared_error(rlabels,rpred)
             rloss = tf.reduce_sum(tf.pow(rpred - rlabels, 2)) / (2*float(self.batch_size))
-            # regression accuracy
-            #regression_accuracy,_ = tf.metrics.mean_iou(rlabels,rpred,1)
+            # regression accuracy -> should be IOU
             regression_accuracy = tf.reduce_sum(tf.pow(rpred - rlabels, 2)) / (2*float(self.batch_size))
             # Classification accuracy
             correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(labels, 1))
             accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+            # joint loss
+            joint_loss = loss + rloss
 
-            return tf.reduce_mean(loss), accuracy, rloss, regression_accuracy
+            return tf.reduce_mean(loss), accuracy, rloss, regression_accuracy, joint_loss
         # }}}
 
         def concat_coor(o, i, d):
@@ -179,7 +180,7 @@ class Model(object):
         logits,rpred = f_phi(g, scope='f_phi')
         self.all_preds = tf.nn.softmax(logits)
 
-        self.loss, self.accuracy, self.regression_loss, self.regression_accuracy = build_loss(logits, self.a, rpred, self.l)
+        self.loss, self.accuracy, self.regression_loss, self.regression_accuracy, self.joint_loss = build_loss(logits, self.a, rpred, self.l)
 
         # Add summaries
         def draw_iqa(img, q, target_a, pred_a):
