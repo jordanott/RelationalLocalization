@@ -307,7 +307,7 @@ with open('id.txt','r') as ids:
 		if img_id not in seen_img:
 			seen_img[img_id] = 1
 			img = np.array(load_img('images/'+img_id))
-			diff = np.sum(img-mean,axis=(0,1))/float(400**2)
+			diff = np.sum(img-mean,axis=(0,1))/float(TARGET_IMG_SIZE[0]**2)
 			store += diff*diff
 
 std = np.sqrt(store/float(len(store)-1))
