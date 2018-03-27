@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from __future__ import division
-from __future__ import print_function
+
 from keras.preprocessing.image import load_img
 import os.path
 import numpy as np
@@ -50,9 +50,29 @@ class Dataset(object):
         q = self.data[id]['question'].value.astype(np.float32)
         a = self.data[id]['answer'].value.astype(np.float32)
         l = self.data[id]['location'].value.astype(np.float32)
+
         # normalize coordinates
         l -= self.coords_mean
         l /= self.coords_std
+
+        text_questions = {
+            1:'Where is the {oi}?',
+            2:'Is the {oi} on the left?',
+            3:'Is the {oi} on the left of the {oj}?',
+            4:'What object is in between the {oi} and the {oj}?',
+            5:'What object is closest to the {oi}?',
+            6:'What object is farthest from the {oi}?',
+            7:'What {oi} is closest to the {oj}?',
+            8:'What {oi} is farthest from the {oj}?'
+        }
+
+        import sys
+        sys.path.append('../DatasetCreation')
+        from utils import *
+        text = text_questions[np.argmax(q[30:])+1]
+        print text.format(oi=obj_look_up[np.argmax(q[:15])])
+        print ans_look_up[np.argmax(a)]
+        
         return img, q, a, l
 
     @property

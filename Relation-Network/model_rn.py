@@ -260,7 +260,7 @@ class Model(object):
                                                          stddev=1e-1), name='weights')
                 conv = tf.nn.conv2d(self.conv5_1, kernel, [1, 1, 1, 1], padding='SAME')
                 biases = tf.Variable(tf.constant(0.0, shape=[512], dtype=tf.float32),
-                                     trainable=False, name='biases')
+                                     trainable=True, name='biases')
                 out = tf.nn.bias_add(conv, biases)
                 self.conv5_2 = tf.nn.relu(out, name=scope)
                 self.parameters += [kernel, biases]
@@ -271,7 +271,7 @@ class Model(object):
                                                          stddev=1e-1), name='weights')
                 conv = tf.nn.conv2d(self.conv5_2, kernel, [1, 1, 1, 1], padding='SAME')
                 biases = tf.Variable(tf.constant(0.0, shape=[512], dtype=tf.float32),
-                                     trainable=False, name='biases')
+                                     trainable=True, name='biases')
                 out = tf.nn.bias_add(conv, biases)
                 self.conv5_3 = tf.nn.relu(out, name=scope)
                 self.parameters += [kernel, biases]
@@ -279,7 +279,7 @@ class Model(object):
             # pool5
             pool5 = tf.nn.max_pool(self.conv5_3,
                                    ksize=[1, 2, 2, 1],
-                                   strides=[1, 2, 2, 1],
+                                   strides=[1, 1, 1, 1],
                                    padding='SAME',
                                    name='pool5')
 
@@ -338,10 +338,11 @@ class Model(object):
                 return fc_a_4,rfc_3
 
         g = CONV(self.img, self.q, scope='CONV')
-        logits,rpred = f_phi(g, scope='f_phi')
+        logits,self.rpred = f_phi(g, scope='f_phi')
+
         self.all_preds = tf.nn.softmax(logits)
 
-        self.loss, self.accuracy, self.regression_loss, self.regression_accuracy, self.joint_loss = build_loss(logits, self.a, rpred, self.l)
+        self.loss, self.accuracy, self.regression_loss, self.regression_accuracy, self.joint_loss = build_loss(logits, self.a, self.rpred, self.l)
 
         # Add summaries
         def draw_iqa(img, q, target_a, pred_a):

@@ -1,45 +1,12 @@
 from keras.preprocessing.image import load_img
-#from visualize import visualize_qa
+from utils import *
+from visualize import *
 import progressbar
 import h5py
 import json
 import numpy as np
 import scipy.misc
 import os
-
-RESIZE_IMAGES = False
-QUESTIONS = [True,True,False,False,False,False,False,False]
-TARGET_IMG_SIZE = (400,400,3)
-DATASET_NAME = 'Q1Q2.hy'
-
-desired_objects = {
-'car': 0,
-'chair': 1,
-'door': 2,
-'leaves': 3,
-'light': 4,
-'person': 5,
-'plate': 6,
-'pole': 7,
-'shirt': 8,
-'sign': 9,
-'table': 10,
-'train': 11,
-'tree': 12,
-'wall': 13,
-'window': 14}
-
-questions = {1:30,2:31,3:32,4:33,5:34,6:35,7:36,8:37}
-num_each_question = {1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0}
-
-QUESTION_OFFSET = len(desired_objects)
-
-def get_qa():
-    # car,chair,door,leaves,light,person,plate,pole,shirt,sign,table,train,tree,trees,wall,window,yes, no,
-    answer_array = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-    # objects (0-14), subject (15-30), question (31-38)
-    question_array = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-    return question_array,answer_array
 
 data= json.load(open('objects.json'))
 
@@ -125,7 +92,7 @@ for img_data in data:
                 question_answer['answers'].append(a)
                 question_answer['locations'].append(object_coordinates[obj][0])
                 num_each_question[1] += 1
-            #visualize_qa(1,obj,object_coordinates[obj][0],img,obj)
+                #visualize_qa(1,obj,object_coordinates[obj][0],img,obj)
             if QUESTIONS[1]: # question 2
                 q,a = get_qa()
                 x,y,_,_ = object_coordinates[obj][0]
@@ -170,7 +137,7 @@ for img_data in data:
                         question_answer['answers'].append(a)
                         question_answer['locations'].append(obj_2_coords[min_idx].tolist())
                         num_each_question[7] += 1
-                    #visualize_qa(7,obj_2,obj_2_coords[min_idx].tolist(),img,obj_2,obj)
+                        #visualize_qa(7,obj_2,obj_2_coords[min_idx].tolist(),img,obj_2,obj)
 
                     if QUESTIONS[7]: # question 8
                         q,a = get_qa()
@@ -184,7 +151,7 @@ for img_data in data:
                         question_answer['answers'].append(a)
                         question_answer['locations'].append(obj_2_coords[max_idx].tolist())
                         num_each_question[8] += 1
-                    #visualize_qa(8,obj_2,obj_2_coords[max_idx].tolist(),img,obj_2,obj)
+                        #visualize_qa(8,obj_2,obj_2_coords[max_idx].tolist(),img,obj_2,obj)
                 # question 5 and 6
                 elif obj_2 != obj:
                     obj_2_coords = np.array(object_coordinates[obj_2])
@@ -288,6 +255,7 @@ for img_data in data:
             grp['question'] = question_answer['questions'][i]
             grp['answer'] = question_answer['answers'][i]
             grp['location'] = question_answer['locations'][i]
+
             question_count += 1
 
             _coords = np.array(question_answer['locations'][i]).reshape(1,4)
