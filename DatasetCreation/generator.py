@@ -7,6 +7,11 @@ import numpy as np
 import scipy.misc
 import os
 
+RESIZE_IMAGES = False
+QUESTIONS = [True,True,False,False,False,False,False,False]
+TARGET_IMG_SIZE = (400,400,3)
+DATASET_NAME = 'Q1Q2.hy'
+
 desired_objects = {
 'car': 0,
 'chair': 1,
@@ -25,8 +30,8 @@ desired_objects = {
 'window': 14}
 
 questions = {1:30,2:31,3:32,4:33,5:34,6:35,7:36,8:37}
+num_each_question = {1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0}
 
-TARGET_IMG_SIZE = (400,400,3)
 QUESTION_OFFSET = len(desired_objects)
 
 def get_qa():
@@ -36,13 +41,13 @@ def get_qa():
     question_array = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     return question_array,answer_array
 
-data= json.load(open('RelationalLocalization/DatasetCreation/objects.json'))
+data= json.load(open('objects.json'))
 
 dataset_size = len(data)
 count = 0
 question_count = 0
 image_count = 0
-f = h5py.File('data.hy', 'w')
+f = h5py.File(DATASET_NAME, 'w')
 id_file = open('id.txt', 'w')
 
 # progress bar
@@ -52,10 +57,7 @@ bar = progressbar.ProgressBar(maxval=100,
 bar.start()
 #img_store = np.empty((1,400,400,3))
 coords_store = np.empty((1,4))
-total_image = np.zeros((400,400,3))
-
-ms = np.load('img_mean_coords_mean_std.npz')
-mean_img = ms['img_mean']
+total_image = np.zeros(TARGET_IMG_SIZE)
 
 for img_data in data:
     # setting ID of image
@@ -86,22 +88,20 @@ for img_data in data:
     question_answer = {'questions':[],'answers':[],'locations':[]}
 
     # load img, get size of original
-    complete_location = 'VG_100K/'+str(image_id)+'.jpg'
+    complete_location = '../../VG_100K/'+str(image_id)+'.jpg'
     if os.path.isfile(complete_location):
         img = np.array(load_img(complete_location))
         prev_h,prev_w,_ = img.shape
         img = np.array(load_img(complete_location,target_size=TARGET_IMG_SIZE))
     else:
-        complete_location = 'VG_100K_2/'+str(image_id)+'.jpg'
+        complete_location = '../../VG_100K_2/'+str(image_id)+'.jpg'
         img = np.array(load_img(complete_location))
         prev_h,prev_w,_ = img.shape
         img = np.array(load_img(complete_location,target_size=TARGET_IMG_SIZE))
+    # save resized image
+    if RESIZE_IMAGES:
+        scipy.misc.imsave('images/'+str(image_id)+'.jpg', img)
 
-    # print 'prev',prev_h,prev_w
-    scipy.misc.imsave('images/'+str(image_id)+'.jpg', img)
-    #import pprint
-    #pp = pprint.PrettyPrinter(indent=4)
-    #pp.pprint(objects_freq)
     for obj in objects_freq:
         # resizing coordinates
         for i in range(len(object_coordinates[obj])):
@@ -114,32 +114,34 @@ for img_data in data:
             object_coordinates[obj][i] = [rescaled_x,rescaled_y,rescaled_h,rescaled_w]
     for obj in objects_freq:
         if objects_freq[obj] == 1:
-            # question 1
-            q,a = get_qa()
-            q[desired_objects[obj]] = 1
-            q[desired_objects[obj]+QUESTION_OFFSET] = 1
-            q[questions[1]] = 1
-            # answer 1
-            a[desired_objects[obj]] = 1
-            question_answer['questions'].append(q)
-            question_answer['answers'].append(a)
-            question_answer['locations'].append(object_coordinates[obj][0])
+            if QUESTIONS[0]: # question 1
+                q,a = get_qa()
+                q[desired_objects[obj]] = 1
+                q[desired_objects[obj]+QUESTION_OFFSET] = 1
+                q[questions[1]] = 1
+                # answer 1
+                a[desired_objects[obj]] = 1
+                question_answer['questions'].append(q)
+                question_answer['answers'].append(a)
+                question_answer['locations'].append(object_coordinates[obj][0])
+                num_each_question[1] += 1
             #visualize_qa(1,obj,object_coordinates[obj][0],img,obj)
-            # question 2
-            q,a = get_qa()
-            x,y,_,_ = object_coordinates[obj][0]
-            q[desired_objects[obj]] = 1
-            q[desired_objects[obj]+QUESTION_OFFSET] = 1
-            q[questions[2]] = 1
-            if x < 200:
-                a[-2] = 1
-                #visualize_qa(2,'yes',object_coordinates[obj][0],img,obj)
-            else:
-                a[-1] = 1
-                #visualize_qa(2,'no',object_coordinates[obj][0],img,obj)
-            question_answer['questions'].append(q)
-            question_answer['answers'].append(a)
-            question_answer['locations'].append(object_coordinates[obj][0])
+            if QUESTIONS[1]: # question 2
+                q,a = get_qa()
+                x,y,_,_ = object_coordinates[obj][0]
+                q[desired_objects[obj]] = 1
+                q[desired_objects[obj]+QUESTION_OFFSET] = 1
+                q[questions[2]] = 1
+                if x < 200:
+                    a[-2] = 1
+                    #visualize_qa(2,'yes',object_coordinates[obj][0],img,obj)
+                else:
+                    a[-1] = 1
+                    #visualize_qa(2,'no',object_coordinates[obj][0],img,obj)
+                question_answer['questions'].append(q)
+                question_answer['answers'].append(a)
+                question_answer['locations'].append(object_coordinates[obj][0])
+                num_each_question[2] += 1
 
             obj_coords = np.array(object_coordinates[obj][0])[:2]
             question_7_8 = []
@@ -156,30 +158,32 @@ for img_data in data:
                     distances = np.linalg.norm(obj_coords - obj_2_coords[:,:2], axis=1)
                     max_idx = np.argmax(distances)
                     min_idx = np.argmin(distances)
-                    # question 7
-                    q,a = get_qa()
-                    q[desired_objects[obj]] = 1
-                    q[desired_objects[obj_2]] = 1
-                    q[desired_objects[obj]+QUESTION_OFFSET] = 1
-                    q[questions[7]] = 1
+                    if QUESTIONS[6]: # question 7
+                        q,a = get_qa()
+                        q[desired_objects[obj]] = 1
+                        q[desired_objects[obj_2]] = 1
+                        q[desired_objects[obj]+QUESTION_OFFSET] = 1
+                        q[questions[7]] = 1
 
-                    a[desired_objects[obj_2]] = 1
-                    question_answer['questions'].append(q)
-                    question_answer['answers'].append(a)
-                    question_answer['locations'].append(obj_2_coords[min_idx].tolist())
+                        a[desired_objects[obj_2]] = 1
+                        question_answer['questions'].append(q)
+                        question_answer['answers'].append(a)
+                        question_answer['locations'].append(obj_2_coords[min_idx].tolist())
+                        num_each_question[7] += 1
                     #visualize_qa(7,obj_2,obj_2_coords[min_idx].tolist(),img,obj_2,obj)
 
-                    # question 8
-                    q,a = get_qa()
-                    q[desired_objects[obj]] = 1
-                    q[desired_objects[obj_2]] = 1
-                    q[desired_objects[obj]+QUESTION_OFFSET] = 1
-                    q[questions[8]] = 1
+                    if QUESTIONS[7]: # question 8
+                        q,a = get_qa()
+                        q[desired_objects[obj]] = 1
+                        q[desired_objects[obj_2]] = 1
+                        q[desired_objects[obj]+QUESTION_OFFSET] = 1
+                        q[questions[8]] = 1
 
-                    a[desired_objects[obj_2]] = 1
-                    question_answer['questions'].append(q)
-                    question_answer['answers'].append(a)
-                    question_answer['locations'].append(obj_2_coords[max_idx].tolist())
+                        a[desired_objects[obj_2]] = 1
+                        question_answer['questions'].append(q)
+                        question_answer['answers'].append(a)
+                        question_answer['locations'].append(obj_2_coords[max_idx].tolist())
+                        num_each_question[8] += 1
                     #visualize_qa(8,obj_2,obj_2_coords[max_idx].tolist(),img,obj_2,obj)
                 # question 5 and 6
                 elif obj_2 != obj:
@@ -197,7 +201,7 @@ for img_data in data:
                         min_dist_coords = obj_2_coords[min_idx].tolist()
 
             # question 5
-            if min_dist_obj:
+            if QUESTIONS[4] and min_dist_obj:
                 q,a = get_qa()
                 q[desired_objects[obj]] = 1
                 q[desired_objects[obj]+QUESTION_OFFSET] = 1
@@ -207,9 +211,10 @@ for img_data in data:
                 question_answer['questions'].append(q)
                 question_answer['answers'].append(a)
                 question_answer['locations'].append(min_dist_coords)
+                num_each_question[5] += 1
                 #visualize_qa(5,min_dist_obj,min_dist_coords,img,obj)
             # question 6
-            if max_dist_obj:
+            if QUESTIONS[5] and max_dist_obj:
                 q,a = get_qa()
                 q[desired_objects[obj]] = 1
                 q[desired_objects[obj]+QUESTION_OFFSET] = 1
@@ -219,13 +224,14 @@ for img_data in data:
                 question_answer['questions'].append(q)
                 question_answer['answers'].append(a)
                 question_answer['locations'].append(max_dist_coords)
+                num_each_question[6] += 1
                 #visualize_qa(6,max_dist_obj,max_dist_coords,img,obj)
 
         for obj_2 in objects_freq:
             if obj_2 == obj:
                 continue
-            if objects_freq[obj] == 1 and objects_freq[obj_2] == 1:
-                # question 3
+            # question 3
+            if objects_freq[obj] == 1 and objects_freq[obj_2] == 1 and QUESTIONS[2]:
                 q,a = get_qa()
                 q[desired_objects[obj]] = 1
                 q[desired_objects[obj_2]] = 1
@@ -243,32 +249,34 @@ for img_data in data:
                 question_answer['questions'].append(q)
                 question_answer['answers'].append(a)
                 question_answer['locations'].append(object_coordinates[obj][0])
-
+                num_each_question[3] += 1
             # question 4
-            q,a = get_qa()
-            for obj_3 in objects_freq:
-                if obj_3 == obj_2 or obj == obj_2 or obj == obj_3:
-                    continue
-                if objects_freq[obj] == 1 and objects_freq[obj_2] == 1 and objects_freq[obj_3] == 1:
-                    obj_x = object_coordinates[obj][0][0]
-                    obj_2_x = object_coordinates[obj_2][0][0]
-                    obj_3_x = object_coordinates[obj_3][0][0]
+            if QUESTIONS[3]:
+                q,a = get_qa()
+                for obj_3 in objects_freq:
+                    if obj_3 == obj_2 or obj == obj_2 or obj == obj_3:
+                        continue
+                    if objects_freq[obj] == 1 and objects_freq[obj_2] == 1 and objects_freq[obj_3] == 1:
+                        obj_x = object_coordinates[obj][0][0]
+                        obj_2_x = object_coordinates[obj_2][0][0]
+                        obj_3_x = object_coordinates[obj_3][0][0]
 
-                    obj_idx = {0:obj,1:obj_2,2:obj_3}
-                    obj_sort = np.argsort([obj_x,obj_2_x,obj_3_x])
-                    left_obj = obj_idx[obj_sort[0]]
-                    middle_obj = obj_idx[obj_sort[1]]
-                    right_obj = obj_idx[obj_sort[2]]
+                        obj_idx = {0:obj,1:obj_2,2:obj_3}
+                        obj_sort = np.argsort([obj_x,obj_2_x,obj_3_x])
+                        left_obj = obj_idx[obj_sort[0]]
+                        middle_obj = obj_idx[obj_sort[1]]
+                        right_obj = obj_idx[obj_sort[2]]
 
-                    q[desired_objects[left_obj]] = 1
-                    q[desired_objects[right_obj]] = 1
-                    q[desired_objects[middle_obj]+QUESTION_OFFSET] = 1
-                    q[questions[4]] = 1
+                        q[desired_objects[left_obj]] = 1
+                        q[desired_objects[right_obj]] = 1
+                        q[desired_objects[middle_obj]+QUESTION_OFFSET] = 1
+                        q[questions[4]] = 1
 
-                    a[desired_objects[middle_obj]] = 1
-                    question_answer['questions'].append(q)
-                    question_answer['answers'].append(a)
-                    question_answer['locations'].append(object_coordinates[middle_obj][0])
+                        a[desired_objects[middle_obj]] = 1
+                        question_answer['questions'].append(q)
+                        question_answer['answers'].append(a)
+                        question_answer['locations'].append(object_coordinates[middle_obj][0])
+                        num_each_question[4] += 1
                     #visualize_qa(4,middle_obj,object_coordinates[middle_obj][0],img,left_obj,right_obj)
     if len(question_answer['questions']):
         image_count += 1
@@ -297,6 +305,11 @@ for img_data in data:
 
 print 'Images:',image_count,'Questions: ',question_count
 
+import pprint
+pp = pprint.PrettyPrinter(indent=4)
+# print frequency of each question
+pp.pprint(num_each_question)
+
 #img_store = np.delete(img_store,0,0)
 mean = total_image/float(image_count) #np.mean(img_store,axis=(0,1,2))
 #std = np.std(img_store,axis=(0,1,2))
@@ -314,11 +327,11 @@ import h5py
 data = np.load('img_mean_coords_mean_std.npz')
 img_mean, coords_mean, coords_std = data['img_mean'],data['coords_mean'],data['coords_std']
 
-mean = np.sum(img_mean,axis=(0,1))/float(400**2)
-print mean
+mean = np.sum(img_mean,axis=(0,1))/float(TARGET_IMG_SIZE[0]**2)
+print 'Mean:',mean
 store = np.zeros(3)
 seen_img = {}
-f = h5py.File('data.hy', 'r')
+f = h5py.File(DATASET_NAME, 'r')
 with open('id.txt','r') as ids:
 	for line in ids:
 		ID = line.strip()
@@ -330,5 +343,5 @@ with open('id.txt','r') as ids:
 			store += diff*diff
 
 std = np.sqrt(store/float(len(store)-1))
-print std
+print 'Std:',std
 np.savez('img_mean_std_coords_mean_std',img_mean=mean,img_std=std,coords_mean=coords_mean,coords_std=coords_std)
