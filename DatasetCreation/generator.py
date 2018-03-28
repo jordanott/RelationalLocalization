@@ -312,4 +312,4 @@ with open('id.txt','r') as ids:
 
 std = np.sqrt(store/float(len(store)-1))
 print 'Std:',std
-np.savez('img_mean_std_coords_mean_std',img_mean=mean,img_std=std,coords_mean=coords_mean,coords_std=coords_std)
+np.savez('mean_std',img_mean=mean,img_std=std,coords_mean=coords_mean,coords_std=coords_std)

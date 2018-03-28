@@ -1,6 +1,6 @@
 RESIZE_IMAGES = True
 QUESTIONS = [True,True,False,False,True,True,False,False]
-TARGET_IMG_SIZE = (400,400,3)
+TARGET_IMG_SIZE = (300,300,3)
 DATASET_NAME = 'data.hy'
 
 desired_objects = {

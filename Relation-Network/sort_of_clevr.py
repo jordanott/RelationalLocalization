@@ -73,12 +73,12 @@ class Dataset(object):
 
 def get_data_info():
     # img height, img width, channels, questions, answer
-    return np.array([400, 400, 3, 38, 17])
+    return np.array([300, 300, 3, 38, 17])
 
 
 def get_conv_info():
     # changed from -> np.array([24, 24, 24, 24])
-    return np.array([64, 128, 256, 512, 512])
+    return np.array([64, 128, 256, 256, 128])
 
 
 def create_default_splits(path, is_train=True):

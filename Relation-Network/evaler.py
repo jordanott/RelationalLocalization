@@ -42,7 +42,7 @@ class EvalManager(object):
         for id, pred, gt in zip(self._ids, self._predictions, self._groundtruths):
             for i in range(pred.shape[0]):
                 # relational
-                if np.argmax(gt[i, :]) < NUM_COLOR:
+                if np.argmax(gt[i, :]) < 2:
                     count_r += 1
                     if np.argmax(pred[i, :]) == np.argmax(gt[i, :]):
                         correct_prediction_r += 1
@@ -146,16 +146,18 @@ class Evaler(object):
         evaler = EvalManager()
         try:
             for s in xrange(max_steps):
-                step, loss, step_time, batch_chunk, prediction_pred, prediction_gt, p_l = self.run_single_step(self.batch)
- 
+                step, acc, step_time, batch_chunk, prediction_pred, prediction_gt, p_l = self.run_single_step(self.batch)
+
                 question_array = batch_chunk['q'][0]
                 answer_array = batch_chunk['a'][0]
 
                 location = batch_chunk['l'][0]
-                print location
                 location *= self.coords_std
                 location += self.coords_mean
 
+                p_l = p_l[0] * self.coords_std
+                p_l += self.coords_mean
+                print p_l
                 img = batch_chunk['img'][0]
                 img *= self.img_std
                 img += self.img_mean
@@ -167,12 +169,12 @@ class Evaler(object):
                 sub = np.argmax(question_array[15:30]) if np.sum(question_array[15:30]) else None
                 oi = obj_look_up[obj]
 
-                p_l = [10,20,10,5]
+                #p_l = [10,20,10,5]
                 p_a = ans_look_up[np.argmax(prediction_pred[0])]
                 a = ans_look_up[np.argmax(answer_array)]
 
                 visualize_prediction(question_num,a,p_a,location,p_l,img,oi,oj=None,id=s)
-                self.log_step_message(s, loss, step_time)
+                self.log_step_message(s, acc, step_time)
                 evaler.add_batch(batch_chunk['id'], prediction_pred, prediction_gt)
 
         except Exception as e:
