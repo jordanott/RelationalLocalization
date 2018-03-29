@@ -51,7 +51,7 @@ def question2str(qv,i):
                                                          q_type(q_num))
 
 
-def answer2str(av,i,l, prefix=None):
+def answer2str(av,i, prefix=None):
 
     def a_type(a):
         return {
@@ -66,17 +66,29 @@ def answer2str(av,i,l, prefix=None):
             8: 'yes',
             9: 'no',
         }[np.argmax(a[i])]
+
     if not prefix:
-        return '[Answer: {} @ ({},{})]'.format(a_type(av),l[i][0],l[i][1])
+        return '[Answer: {} ]'.format(a_type(av))
     else:
         return '[{} Answer: {}]'.format(prefix, a_type(av))
 
 
-def visualize_iqa(img, q, a, l):
+def visualize_iqa(img, q, a, p_a, l, p_l, id=0):
     #fig = plt.figure()
-    for i in range(NUM_SHAPE*NUM_Q):
-        plt.imshow(img)
-        plt.title(question2str(q,i))
-        plt.xlabel(answer2str(a,i,l))
-        plt.show()
+    #for i in range(NUM_SHAPE*NUM_Q):
+    i = 0
+    fig,ax = plt.subplots(1)
+    ax.imshow(img)
+
+    ax.set_title(question2str(q,i))
+    x_lab = answer2str(a,i) + answer2str(p_a,i,prefix='Predicted')
+    ax.set_xlabel(x_lab)
+
+    circle1 = plt.Circle((l[0][0], l[0][1]), 1, color='black')
+    ax.add_patch(circle1)
+    circle2 = plt.Circle((p_l[0][0], p_l[0][1]), 3, color='white',fill=False)
+    ax.add_patch(circle2)
+
+    plt.savefig('{}.png'.format(id))
+    plt.clf()
     #return fig

@@ -1,19 +1,22 @@
 from __future__ import absolute_import
 from __future__ import division
-from __future__ import print_function
 
 from six.moves import xrange
 
 from util import log
 
 from input_ops import create_input_ops, check_data_id
-from vqa_util import NUM_COLOR
+from vqa_util import *
 
 import os
+import sys
 import time
 import numpy as np
 import tensorflow as tf
 
+sys.path.append('../DatasetCreation')
+from visualize import visualize_prediction
+from utils import *
 
 class EvalManager(object):
     def __init__(self):
@@ -111,6 +114,7 @@ class Evaler(object):
         self.checkpoint_path = config.checkpoint_path
         if self.checkpoint_path is None and self.train_dir:
             self.checkpoint_path = tf.train.latest_checkpoint(self.train_dir)
+
         if self.checkpoint_path is None:
             log.warn("No checkpoint is given. Just random initialization :-)")
             self.session.run(tf.global_variables_initializer())
@@ -138,9 +142,22 @@ class Evaler(object):
         evaler = EvalManager()
         try:
             for s in xrange(max_steps):
-                step, loss, step_time, batch_chunk, prediction_pred, prediction_gt = \
-                    self.run_single_step(self.batch)
-                self.log_step_message(s, loss, step_time)
+                step, acc, step_time, batch_chunk, prediction_pred, prediction_gt, p_l = self.run_single_step(self.batch)
+
+                question_array = batch_chunk['q']
+                answer_array = batch_chunk['a']
+
+                location = batch_chunk['l']
+                location *= 128
+
+                p_l *= 128
+
+                img = batch_chunk['img'][0]
+                img *= 256
+                img = img.astype(np.uint8)
+
+                visualize_iqa(img, question_array, answer_array, prediction_pred, location,p_l, s)
+                self.log_step_message(s, acc, step_time)
                 evaler.add_batch(batch_chunk['id'], prediction_pred, prediction_gt)
 
         except Exception as e:
@@ -160,14 +177,14 @@ class Evaler(object):
 
         batch_chunk = self.session.run(batch)
 
-        [step, accuracy, all_preds, all_targets, _] = self.session.run(
-            [self.global_step, self.model.accuracy, self.model.all_preds, self.model.a, self.step_op],
+        [step, accuracy, all_preds, rpred, all_targets, _] = self.session.run(
+            [self.global_step, self.model.accuracy, self.model.all_preds, self.model.rpred, self.model.a, self.step_op],
             feed_dict=self.model.get_feed_dict(batch_chunk)
         )
 
         _end_time = time.time()
 
-        return step, accuracy, (_end_time - _start_time), batch_chunk, all_preds, all_targets
+        return step, accuracy, (_end_time - _start_time), batch_chunk, all_preds, all_targets, rpred
 
     def log_step_message(self, step, accuracy, step_time, is_train=False):
         if step_time == 0: step_time = 0.001
@@ -195,8 +212,8 @@ def check_data_path(path):
 def main():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_size', type=int, default=50)
-    parser.add_argument('--model', type=str, default='conv', choices=['rn', 'baseline'])
+    parser.add_argument('--batch_size', type=int, default=1)
+    parser.add_argument('--model', type=str, default='rn', choices=['rn', 'baseline'])
     parser.add_argument('--checkpoint_path', type=str)
     parser.add_argument('--train_dir', type=str)
     parser.add_argument('--dataset_path', type=str, default='Sort-of-CLEVR_default')
