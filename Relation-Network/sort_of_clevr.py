@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 from __future__ import division
-from __future__ import print_function
 
 import os.path
 import numpy as np
@@ -39,6 +38,7 @@ class Dataset(object):
         q = self.data[id]['question'].value.astype(np.float32)
         a = self.data[id]['answer'].value.astype(np.float32)
         l = self.data[id]['location'].value.astype(np.float32)
+        
         return img, q, a, l
 
     @property
