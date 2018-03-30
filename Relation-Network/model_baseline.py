@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 from __future__ import division
-from __future__ import print_function
 
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
@@ -28,6 +27,7 @@ class Model(object):
         self.c_dim = self.config.data_info[2]
         self.q_dim = self.config.data_info[3]
         self.a_dim = self.config.data_info[4]
+        self.l_dim = 2 # (x,y)
         self.conv_info = self.config.conv_info
 
         # create placeholders for the input
@@ -41,6 +41,9 @@ class Model(object):
         self.a = tf.placeholder(
             name='a', dtype=tf.float32, shape=[self.batch_size, self.a_dim],
         )
+        self.l = tf.placeholder(
+            name='l', dtype=tf.float32, shape=[self.batch_size, self.l_dim],
+        )
 
         self.is_training = tf.placeholder_with_default(bool(is_train), [], name='is_training')
 
@@ -51,6 +54,7 @@ class Model(object):
             self.img: batch_chunk['img'],  # [B, h, w, c]
             self.q: batch_chunk['q'],  # [B, n]
             self.a: batch_chunk['a'],  # [B, m]
+            self.l: batch_chunk['l']   # [B, 2]
         }
         if is_training is not None:
             fd[self.is_training] = is_training
@@ -63,22 +67,26 @@ class Model(object):
         conv_info = self.conv_info
 
         # build loss and accuracy {{{
-        def build_loss(logits, labels, rpred, rlabels):
+        def build_loss(logits, labels, rpred=None, rlabels=None):
             # Cross-entropy loss
             loss = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=labels)
             loss = tf.reduce_mean(loss)
-            # regression loss
-            #rloss = tf.losses.mean_squared_error(rlabels,rpred)
-            rloss = tf.reduce_sum(tf.pow(rpred - rlabels, 2)) / (2*float(self.batch_size))
-            # regression accuracy -> should be IOU
-            regression_accuracy = tf.reduce_sum(tf.pow(rpred - rlabels, 2)) / (2*float(self.batch_size))
+            
             # Classification accuracy
             correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(labels, 1))
             accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-            # joint loss
-            joint_loss = loss + rloss
+            
+            # regression loss
+            #rloss = tf.losses.mean_squared_error(rlabels,rpred)
+            if self.config.location:
+                rloss = tf.reduce_sum(tf.pow(rpred - rlabels, 2)) / (2*float(self.batch_size))
+                # regression accuracy -> should be IOU
+                regression_accuracy = tf.reduce_sum(tf.pow(rpred - rlabels, 2)) / (2*float(self.batch_size))
+                # joint loss
+                joint_loss = loss + rloss
 
-            return loss, accuracy, rloss, regression_accuracy, joint_loss
+                return loss, accuracy, rloss, regression_accuracy, joint_loss
+            return loss, accuracy
         # }}}
 
         # Classifier: takes images as input and outputs class label [B, m]
@@ -97,14 +105,22 @@ class Model(object):
                 fc_3 = fc(fc_2, 128, name='fc_3')
                 fc_4 = fc(fc_3, n, activation_fn=None, name='fc_4')
                 # location prediction
-                rfc_3 = fc(fc_2, 128, name='rfc_3')
-                rfc_4 = fc(rfc_3, self.l_dim, activation_fn=None, name='rfc_4')
+                if self.config.location:
+                    rfc_3 = fc(fc_2, 128, name='rfc_3')
+                    rfc_4 = fc(rfc_3, self.l_dim, activation_fn=None, name='rfc_4')
 
-                return fc_4,rfc_4
+                    return fc_4,rfc_4
+                return fc_4
+        print 'Using location',self.config.location
+        if self.config.location:
+            logits, self.rpred = C(self.img, self.q, scope='Classifier')
+            self.loss, self.accuracy, self.regression_loss, self.regression_accuracy, self.joint_loss = build_loss(logits, self.a, self.rpred, self.l)
+        else:
+            logits = C(self.img, self.q, scope='Classifier')
+            self.loss, self.accuracy = build_loss(logits, self.a)
 
-        logits, self.rpred = C(self.img, self.q, scope='Classifier')
         self.all_preds = tf.nn.softmax(logits)
-        self.loss, self.accuracy, self.regression_loss, self.regression_accuracy, self.joint_loss = build_loss(logits, self.a, self.rpred, self.l)
+        
 
         # Add summaries
         def draw_iqa(img, q, target_a, pred_a):
