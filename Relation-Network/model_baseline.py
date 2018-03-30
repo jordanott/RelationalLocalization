@@ -63,14 +63,22 @@ class Model(object):
         conv_info = self.conv_info
 
         # build loss and accuracy {{{
-        def build_loss(logits, labels):
+        def build_loss(logits, labels, rpred, rlabels):
             # Cross-entropy loss
             loss = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=labels)
-
+            loss = tf.reduce_mean(loss)
+            # regression loss
+            #rloss = tf.losses.mean_squared_error(rlabels,rpred)
+            rloss = tf.reduce_sum(tf.pow(rpred - rlabels, 2)) / (2*float(self.batch_size))
+            # regression accuracy -> should be IOU
+            regression_accuracy = tf.reduce_sum(tf.pow(rpred - rlabels, 2)) / (2*float(self.batch_size))
             # Classification accuracy
             correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(labels, 1))
             accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-            return tf.reduce_mean(loss), accuracy
+            # joint loss
+            joint_loss = loss + rloss
+
+            return loss, accuracy, rloss, regression_accuracy, joint_loss
         # }}}
 
         # Classifier: takes images as input and outputs class label [B, m]
@@ -85,12 +93,18 @@ class Model(object):
                 fc_1 = fc(conv_q, 256, name='fc_1')
                 fc_2 = fc(fc_1, 256, name='fc_2')
                 fc_2 = slim.dropout(fc_2, keep_prob=0.5, is_training=is_train, scope='fc_3/')
-                fc_3 = fc(fc_2, n, activation_fn=None, name='fc_3')
-                return fc_3
+                # answer prediction
+                fc_3 = fc(fc_2, 128, name='fc_3')
+                fc_4 = fc(fc_3, n, activation_fn=None, name='fc_4')
+                # location prediction
+                rfc_3 = fc(fc_2, 128, name='rfc_3')
+                rfc_4 = fc(rfc_3, self.l_dim, activation_fn=None, name='rfc_4')
 
-        logits = C(self.img, self.q, scope='Classifier')
+                return fc_4,rfc_4
+
+        logits, self.rpred = C(self.img, self.q, scope='Classifier')
         self.all_preds = tf.nn.softmax(logits)
-        self.loss, self.accuracy = build_loss(logits, self.a)
+        self.loss, self.accuracy, self.regression_loss, self.regression_accuracy, self.joint_loss = build_loss(logits, self.a, self.rpred, self.l)
 
         # Add summaries
         def draw_iqa(img, q, target_a, pred_a):
@@ -105,7 +119,7 @@ class Model(object):
                                      draw_iqa, [self.img, self.q, self.a, self.all_preds],
                                      max_outputs=3,
                                      collections=["plot_summaries"])
-            
+
         except:
             log.error('Error with plotting')
 
