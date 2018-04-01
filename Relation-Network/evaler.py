@@ -14,9 +14,6 @@ import time
 import numpy as np
 import tensorflow as tf
 
-sys.path.append('../DatasetCreation')
-from visualize import visualize_prediction
-from utils import *
 
 class EvalManager(object):
     def __init__(self):
@@ -149,14 +146,14 @@ class Evaler(object):
 
                 location = batch_chunk['l']
                 location *= 128
-
-                p_l *= 128
+                if self.config.location:
+                    p_l *= 128
 
                 img = batch_chunk['img'][0]
                 img *= 256
                 img = img.astype(np.uint8)
-
-                visualize_iqa(img, question_array, answer_array, prediction_pred, location,p_l, s)
+                if self.config.visualize:
+                    visualize_iqa(img, question_array, answer_array, prediction_pred, location,p_l, s)
                 self.log_step_message(s, acc, step_time)
                 evaler.add_batch(batch_chunk['id'], prediction_pred, prediction_gt)
 
@@ -176,15 +173,20 @@ class Evaler(object):
         _start_time = time.time()
 
         batch_chunk = self.session.run(batch)
-
-        [step, accuracy, all_preds, rpred, all_targets, _] = self.session.run(
-            [self.global_step, self.model.accuracy, self.model.all_preds, self.model.rpred, self.model.a, self.step_op],
-            feed_dict=self.model.get_feed_dict(batch_chunk)
-        )
-
-        _end_time = time.time()
-
-        return step, accuracy, (_end_time - _start_time), batch_chunk, all_preds, all_targets, rpred
+        if self.config.location:
+            [step, accuracy, all_preds, rpred, all_targets, _] = self.session.run(
+                [self.global_step, self.model.accuracy, self.model.all_preds, self.model.rpred, self.model.a, self.step_op],
+                feed_dict=self.model.get_feed_dict(batch_chunk)
+            )
+            _end_time = time.time()
+            return step, accuracy, (_end_time - _start_time), batch_chunk, all_preds, all_targets, rpred
+        else:
+            [step, accuracy, all_preds, all_targets, _] = self.session.run(
+                [self.global_step, self.model.accuracy, self.model.all_preds, self.model.a, self.step_op],
+                feed_dict=self.model.get_feed_dict(batch_chunk)
+            )
+            _end_time = time.time()
+            return step, accuracy, (_end_time - _start_time), batch_chunk, all_preds, all_targets, 'N/A'
 
     def log_step_message(self, step, accuracy, step_time, is_train=False):
         if step_time == 0: step_time = 0.001
@@ -215,6 +217,8 @@ def main():
     parser.add_argument('--batch_size', type=int, default=1)
     parser.add_argument('--model', type=str, default='rn', choices=['rn', 'baseline'])
     parser.add_argument('--checkpoint_path', type=str)
+    parser.add_argument('--location', action='store_true')
+    parser.add_argument('--visualize', action='store_true')
     parser.add_argument('--train_dir', type=str)
     parser.add_argument('--dataset_path', type=str, default='Sort-of-CLEVR_default')
     parser.add_argument('--data_id', nargs='*', default=None)
