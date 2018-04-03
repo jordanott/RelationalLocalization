@@ -243,7 +243,7 @@ class Model(object):
             # pool4
             self.pool4 = tf.nn.max_pool(self.conv4_3,
                                    ksize=[1, 2, 2, 1],
-                                   strides=[1, 1, 1, 1],
+                                   strides=[1, 2, 2, 1],
                                    padding='SAME',
                                    name='pool4')
 

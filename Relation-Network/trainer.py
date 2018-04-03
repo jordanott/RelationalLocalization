@@ -232,17 +232,17 @@ def check_data_path(path):
 def main():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_size', type=int, default=16)
+    parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--model', type=str, default='rn', choices=['rn', 'baseline'])
     parser.add_argument('--prefix', type=str, default='default')
     parser.add_argument('--location', action='store_true')
     parser.add_argument('--checkpoint', type=str, default=None)
-    parser.add_argument('--dataset_path', type=str, default='Sort-of-CLEVR_default')
+    parser.add_argument('--dataset_path', type=str, default='')
     parser.add_argument('--learning_rate', type=float, default=2.5e-4)
     parser.add_argument('--lr_weight_decay', action='store_true', default=False)
     config = parser.parse_args()
 
-    path = os.path.join('./datasets', config.dataset_path)
+    path = os.path.join('../DatasetCreation/VG', config.dataset_path)
 
     if check_data_path(path):
         import sort_of_clevr as dataset
