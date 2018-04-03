@@ -19,4 +19,4 @@
   - [ ] Question embedding options
     - [ ] Preset one-hot questions (no RNN)
     - [ ] With RNN to process questions
-- [ ] Visualize bounding box results on images
+- [x] Visualize bounding box results on images

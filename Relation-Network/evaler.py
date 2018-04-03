@@ -6,16 +6,14 @@ from six.moves import xrange
 from util import log
 
 from input_ops import create_input_ops, check_data_id
-from vqa_util import NUM_COLOR
+from vqa_util import *
 
 import os
 import sys
 import time
 import numpy as np
 import tensorflow as tf
-sys.path.append('../DatasetCreation')
-from visualize import visualize_prediction
-from utils import *
+
 
 class EvalManager(object):
     def __init__(self):
@@ -42,7 +40,7 @@ class EvalManager(object):
         for id, pred, gt in zip(self._ids, self._predictions, self._groundtruths):
             for i in range(pred.shape[0]):
                 # relational
-                if np.argmax(gt[i, :]) < 2:
+                if np.argmax(gt[i, :]) < NUM_COLOR:
                     count_r += 1
                     if np.argmax(pred[i, :]) == np.argmax(gt[i, :]):
                         correct_prediction_r += 1
@@ -83,7 +81,7 @@ class Evaler(object):
         self.batch_size = config.batch_size
 
         self.dataset = dataset
-        print 'ID:',config.data_id
+
         check_data_id(dataset, config.data_id)
         _, self.batch = create_input_ops(dataset, self.batch_size,
                                          data_id=config.data_id,
@@ -113,17 +111,12 @@ class Evaler(object):
         self.checkpoint_path = config.checkpoint_path
         if self.checkpoint_path is None and self.train_dir:
             self.checkpoint_path = tf.train.latest_checkpoint(self.train_dir)
+
         if self.checkpoint_path is None:
             log.warn("No checkpoint is given. Just random initialization :-)")
             self.session.run(tf.global_variables_initializer())
         else:
             log.info("Checkpoint path : %s", self.checkpoint_path)
-
-        mean_std = np.load('../DatasetCreation/VG/mean_std.npz')
-        self.img_mean = mean_std['img_mean']
-        self.img_std = mean_std['img_std']
-        self.coords_mean = mean_std['coords_mean']
-        self.coords_std = mean_std['coords_std']
 
     def eval_run(self):
         # load checkpoint
@@ -148,32 +141,19 @@ class Evaler(object):
             for s in xrange(max_steps):
                 step, acc, step_time, batch_chunk, prediction_pred, prediction_gt, p_l = self.run_single_step(self.batch)
 
-                question_array = batch_chunk['q'][0]
-                answer_array = batch_chunk['a'][0]
+                question_array = batch_chunk['q']
+                answer_array = batch_chunk['a']
 
-                location = batch_chunk['l'][0]
-                location *= self.coords_std
-                location += self.coords_mean
+                location = batch_chunk['l']
+                location *= 128
+                if self.config.location:
+                    p_l *= 128
 
-                p_l = p_l[0] * self.coords_std
-                p_l += self.coords_mean
-                print p_l
                 img = batch_chunk['img'][0]
-                img *= self.img_std
-                img += self.img_mean
+                img *= 256
                 img = img.astype(np.uint8)
-
-                question_num = np.argmax(question_array[30:]) + 1
-                obj = np.argmax(question_array[:15])
-                # check if there's a subject in the question
-                sub = np.argmax(question_array[15:30]) if np.sum(question_array[15:30]) else None
-                oi = obj_look_up[obj]
-
-                #p_l = [10,20,10,5]
-                p_a = ans_look_up[np.argmax(prediction_pred[0])]
-                a = ans_look_up[np.argmax(answer_array)]
-
-                visualize_prediction(question_num,a,p_a,location,p_l,img,oi,oj=None,id=s)
+                if self.config.visualize:
+                    visualize_iqa(img, question_array, answer_array, prediction_pred, location,p_l, s)
                 self.log_step_message(s, acc, step_time)
                 evaler.add_batch(batch_chunk['id'], prediction_pred, prediction_gt)
 
@@ -193,14 +173,20 @@ class Evaler(object):
         _start_time = time.time()
 
         batch_chunk = self.session.run(batch)
-
-        [step, accuracy, all_preds, rpred, all_targets, _] = self.session.run(
-            [self.global_step, self.model.accuracy, self.model.all_preds, self.model.rpred, self.model.a, self.step_op],
-            feed_dict=self.model.get_feed_dict(batch_chunk)
-        )
-
-        _end_time = time.time()
-        return step, accuracy, (_end_time - _start_time), batch_chunk, all_preds, all_targets, rpred
+        if self.config.location:
+            [step, accuracy, all_preds, rpred, all_targets, _] = self.session.run(
+                [self.global_step, self.model.accuracy, self.model.all_preds, self.model.rpred, self.model.a, self.step_op],
+                feed_dict=self.model.get_feed_dict(batch_chunk)
+            )
+            _end_time = time.time()
+            return step, accuracy, (_end_time - _start_time), batch_chunk, all_preds, all_targets, rpred
+        else:
+            [step, accuracy, all_preds, all_targets, _] = self.session.run(
+                [self.global_step, self.model.accuracy, self.model.all_preds, self.model.a, self.step_op],
+                feed_dict=self.model.get_feed_dict(batch_chunk)
+            )
+            _end_time = time.time()
+            return step, accuracy, (_end_time - _start_time), batch_chunk, all_preds, all_targets, 'N/A'
 
     def log_step_message(self, step, accuracy, step_time, is_train=False):
         if step_time == 0: step_time = 0.001
@@ -231,12 +217,14 @@ def main():
     parser.add_argument('--batch_size', type=int, default=1)
     parser.add_argument('--model', type=str, default='rn', choices=['rn', 'baseline'])
     parser.add_argument('--checkpoint_path', type=str)
+    parser.add_argument('--location', action='store_true')
+    parser.add_argument('--visualize', action='store_true')
     parser.add_argument('--train_dir', type=str)
-    parser.add_argument('--dataset_path', type=str, default='')
+    parser.add_argument('--dataset_path', type=str, default='Sort-of-CLEVR_default')
     parser.add_argument('--data_id', nargs='*', default=None)
     config = parser.parse_args()
 
-    path = os.path.join('../DatasetCreation/VG/', config.dataset_path)
+    path = os.path.join('./datasets', config.dataset_path)
 
     if check_data_path(path):
         import sort_of_clevr as dataset

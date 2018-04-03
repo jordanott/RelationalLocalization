@@ -70,9 +70,12 @@ class Trainer(object):
             )
 
         self.check_op = tf.no_op()
-
+        if config.location:
+            loss = self.model.joint_loss
+        else:
+            loss = self.model.loss
         self.optimizer = tf.contrib.layers.optimize_loss(
-            loss=self.model.joint_loss,
+            loss=loss,
             global_step=self.global_step,
             learning_rate=self.learning_rate,
             optimizer=tf.train.AdamOptimizer,
@@ -149,10 +152,13 @@ class Trainer(object):
         _start_time = time.time()
 
         batch_chunk = self.session.run(batch)
-
-        fetch = [self.global_step, self.model.accuracy, self.summary_op,
+        if self.config.location:
+             fetch = [self.global_step, self.model.accuracy, self.summary_op,
                  self.model.loss,self.model.regression_loss, self.model.regression_accuracy,
                  self.model.joint_loss, self.check_op, self.optimizer]
+        else:
+             fetch = [self.global_step, self.model.accuracy, self.summary_op,
+                 self.model.loss, self.check_op, self.optimizer]
 
         try:
             if step is not None and (step % 100 == 0):
@@ -163,9 +169,10 @@ class Trainer(object):
         fetch_values = self.session.run(
             fetch, feed_dict=self.model.get_feed_dict(batch_chunk, step=step)
         )
-
-        [step, accuracy, summary, loss, rloss, racc, joint_loss] = fetch_values[:7]
-
+        if self.config.location:
+            [step, accuracy, summary, loss, rloss, racc, joint_loss] = fetch_values[:7]
+        else:
+            [step, accuracy, summary, loss] = fetch_values[:4]
         try:
             if self.plot_summary_op in fetch:
                 summary += fetch_values[-1]
@@ -173,8 +180,10 @@ class Trainer(object):
             pass
 
         _end_time = time.time()
-
-        return step, accuracy, summary, loss,  (_end_time - _start_time), rloss, racc, joint_loss
+        if self.config.location:
+            return step, accuracy, summary, loss,  (_end_time - _start_time), rloss, racc, joint_loss
+        else:
+            return step, accuracy, summary, loss,  (_end_time - _start_time),'N/A','N/A','N/A'
 
     def run_test(self, batch, is_train=False, repeat_times=8):
 
@@ -226,13 +235,14 @@ def main():
     parser.add_argument('--batch_size', type=int, default=16)
     parser.add_argument('--model', type=str, default='rn', choices=['rn', 'baseline'])
     parser.add_argument('--prefix', type=str, default='default')
+    parser.add_argument('--location', action='store_true')
     parser.add_argument('--checkpoint', type=str, default=None)
-    parser.add_argument('--dataset_path', type=str, default='')
+    parser.add_argument('--dataset_path', type=str, default='Sort-of-CLEVR_default')
     parser.add_argument('--learning_rate', type=float, default=2.5e-4)
     parser.add_argument('--lr_weight_decay', action='store_true', default=False)
     config = parser.parse_args()
 
-    path = os.path.join('../DatasetCreation/VG/', config.dataset_path)
+    path = os.path.join('./datasets', config.dataset_path)
 
     if check_data_path(path):
         import sort_of_clevr as dataset
