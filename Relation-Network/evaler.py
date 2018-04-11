@@ -10,6 +10,10 @@ from vqa_util import *
 
 import os
 import sys
+sys.path.append('../DatasetCreation')
+from visualize import visualize_prediction
+from utils import *
+
 import time
 import numpy as np
 import tensorflow as tf
@@ -40,7 +44,8 @@ class EvalManager(object):
         for id, pred, gt in zip(self._ids, self._predictions, self._groundtruths):
             for i in range(pred.shape[0]):
                 # relational
-                if np.argmax(gt[i, :]) < NUM_COLOR:
+                print gt[i, :]
+                if np.argmax(gt[i, :]) < 32:
                     count_r += 1
                     if np.argmax(pred[i, :]) == np.argmax(gt[i, :]):
                         correct_prediction_r += 1
@@ -118,6 +123,38 @@ class Evaler(object):
         else:
             log.info("Checkpoint path : %s", self.checkpoint_path)
 
+        mean_std = np.load('../DatasetCreation/VG/mean_std.npz')
+        self.img_mean = mean_std['img_mean']
+        self.img_std = mean_std['img_std']
+        self.coords_mean = mean_std['coords_mean']
+        self.coords_std = mean_std['coords_std']
+
+    def IoU(self,boxA, boxB):
+        boxA = boxA.astype(np.float64)
+        boxB = boxB.astype(np.float64)
+
+        boxA[:,2] = boxA[:,1] + boxA[:,2]
+        boxA[:,3] = boxA[:,0] + boxA[:,3]
+        boxB[:,2] = boxB[:,1] + boxB[:,2]
+        boxB[:,3] = boxB[:,0] + boxB[:,3]
+        # determine the (x, y)-coordinates of the intersection rectangle
+        xA = np.maximum(boxA[:,0], boxB[:,0])
+        yA = np.maximum(boxA[:,1], boxB[:,1])
+        xB = np.minimum(boxA[:,2], boxB[:,2])
+        yB = np.minimum(boxA[:,3], boxB[:,3])
+        # compute the area of intersection rectangle
+        interArea = (xB - xA + 1) * (yB - yA + 1)
+        # compute the area of both the prediction and ground-truth
+        # rectangles
+        boxAArea = (boxA[:,2] - boxA[:,0] + 1) * (boxA[:,3] - boxA[:,1] + 1)
+        boxBArea = (boxB[:,2] - boxB[:,0] + 1) * (boxB[:,3] - boxB[:,1] + 1)
+        # compute the intersection over union by taking the intersection
+        # area and dividing it by the sum of prediction + ground-truth
+        # areas - the interesection area
+        iou = interArea / (boxAArea + boxBArea - interArea)
+        # return the intersection over union value
+        return iou
+
     def eval_run(self):
         # load checkpoint
         if self.checkpoint_path:
@@ -144,16 +181,30 @@ class Evaler(object):
                 question_array = batch_chunk['q']
                 answer_array = batch_chunk['a']
 
-                location = batch_chunk['l']
-                location *= 128
                 if self.config.location:
-                    p_l *= 128
+                    p_l = p_l
+                    p_l *= self.coords_std
+                    p_l += self.coords_mean
+
+                    location = batch_chunk['l']
+                    location *= self.coords_std
+                    location += self.coords_mean
+
+                    iou = self.IoU(p_l,location)
+                    print 'IoU:',iou
 
                 img = batch_chunk['img'][0]
-                img *= 256
+                img *= self.img_std
+                img += self.img_mean
                 img = img.astype(np.uint8)
+
                 if self.config.visualize:
-                    visualize_iqa(img, question_array, answer_array, prediction_pred, location,p_l, s)
+                    q = np.argmax(question_array[0][30:])
+                    a = np.argmax(answer_array[0])
+                    p_a = np.argmax(prediction_pred[0])
+                    obj = np.argmax(question_array[0][:15])
+
+                    visualize_prediction(img, q, ans_look_up[a], ans_look_up[p_a], location[0],p_l[0],obj_look_up[obj], id=s)
                 self.log_step_message(s, acc, step_time)
                 evaler.add_batch(batch_chunk['id'], prediction_pred, prediction_gt)
 
@@ -220,11 +271,11 @@ def main():
     parser.add_argument('--location', action='store_true')
     parser.add_argument('--visualize', action='store_true')
     parser.add_argument('--train_dir', type=str)
-    parser.add_argument('--dataset_path', type=str, default='Sort-of-CLEVR_default')
+    parser.add_argument('--dataset_path', type=str, default='')
     parser.add_argument('--data_id', nargs='*', default=None)
     config = parser.parse_args()
 
-    path = os.path.join('./datasets', config.dataset_path)
+    path = os.path.join('../DatasetCreation/VG', config.dataset_path)
 
     if check_data_path(path):
         import sort_of_clevr as dataset

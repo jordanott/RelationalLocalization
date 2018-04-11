@@ -27,15 +27,16 @@ def visualize_qa(q,a,location,img,oi,oj=None):
     ax.add_patch(rect)
     plt.show()
 
-def visualize_prediction(q,a,p_a,location,p_l,img,oi,oj=None,id=0):
+def visualize_prediction(img,q,a,p_a,location,p_l,oi,oj=None,id=0):
     fig,ax = plt.subplots(1)
     ax.imshow(img)
     if oj:
-        ax.set_title('Question '+text_questions[q].format(oi=oi,oj=oj))
+        ax.set_title('Question '+text_questions[q+1].format(oi=oi,oj=oj))
     else:
-        ax.set_title('Question '+text_questions[q].format(oi=oi))
-    print 'Question '+text_questions[q].format(oi=oi)
-    print 'Answer: '+a+', Predicted: '+p_a+', Location: '+str(location)
+        ax.set_title('Question '+text_questions[q+1].format(oi=oi))
+    print 'Question '+text_questions[q+1].format(oi=oi)
+    print 'Answer: '+a+', Predicted: '+p_a+', Location: '+str(location) + ', P Location: '+str(p_l)
+
     ax.set_xlabel('Answer: '+a+', Predicted: '+p_a)
     # Create a Rectangle patch ~ patches handles (w,h) not (h,w)
     rect = patches.Rectangle((location[0],location[1]),location[3],location[2],linewidth=2,edgecolor='g',facecolor='none')
