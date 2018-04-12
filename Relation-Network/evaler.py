@@ -22,46 +22,30 @@ import tensorflow as tf
 class EvalManager(object):
     def __init__(self):
         # collection of batches (not flattened)
-        self._ids = []
-        self._predictions = []
-        self._groundtruths = []
+        self.correct_relational = 0
+        self.total_relational = 0
+        self.correct_nonrelational = 0
+        self.total_nonrelational = 0
+        self.iou = []
 
-    def add_batch(self, id, prediction, groundtruth):
-
+    def add_batch(self,relational, nonrelational,iou):
         # for now, store them all (as a list of minibatch chunks)
-        self._ids.append(id)
-        self._predictions.append(prediction)
-        self._groundtruths.append(groundtruth)
+        self.correct_relational += relational[0]
+        self.total_relational += relational[1]
+        self.correct_nonrelational += nonrelational[0]
+        self.total_nonrelational += nonrelational[1]
+
+        if iou is not None:
+            self.iou.append(iou)
 
     def report(self):
-        # report L2 loss
-        log.info("Computing scores...")
-        correct_prediction_nr = 0
-        count_nr = 0
-        correct_prediction_r = 0
-        count_r = 0
-
-        for id, pred, gt in zip(self._ids, self._predictions, self._groundtruths):
-            for i in range(pred.shape[0]):
-                # relational
-                print gt[i, :]
-                if np.argmax(gt[i, :]) < 32:
-                    count_r += 1
-                    if np.argmax(pred[i, :]) == np.argmax(gt[i, :]):
-                        correct_prediction_r += 1
-                # non-relational
-                else:
-                    count_nr += 1
-                    if np.argmax(pred[i, :]) == np.argmax(gt[i, :]):
-                        correct_prediction_nr += 1
-
-        avg_nr = float(correct_prediction_nr)/count_nr
-        log.infov("Average accuracy of non-relational questions: {}%".format(avg_nr*100))
-        avg_r = float(correct_prediction_r)/count_r
+        avg_nr = self.correct_nonrelational / float(self.total_nonrelational)
+        log.infov("Average accuracy of non-relational questions: {}%".format(100*avg_nr))
+        avg_r = self.correct_relational / float(self.total_relational)
         log.infov("Average accuracy of relational questions: {}%".format(avg_r*100))
-        avg = float(correct_prediction_r+correct_prediction_nr)/(count_r+count_nr)
+        avg = float(self.correct_nonrelational+self.correct_relational)/(self.total_relational+self.total_nonrelational)
         log.infov("Average accuracy: {}%".format(avg*100))
-
+        log.infov('Average IoU: {}'.format(np.mean(self.iou)))
 
 class Evaler(object):
 
@@ -153,6 +137,8 @@ class Evaler(object):
         # areas - the interesection area
         iou = interArea / (boxAArea + boxBArea - interArea)
         # return the intersection over union value
+        iou[iou > 1] = 0
+        iou[iou < 1] = 0
         return iou
 
     def eval_run(self):
@@ -181,6 +167,23 @@ class Evaler(object):
                 question_array = batch_chunk['q']
                 answer_array = batch_chunk['a']
 
+                img = batch_chunk['img'][0]
+                img *= self.img_std
+                img += self.img_mean
+                img = img.astype(np.uint8)
+
+                nonrelational_indx = np.argmax(question_array[:,30:]) < 2
+                relational_indx = np.argmax(question_array[:,30:]) > 1
+
+                relational_pred_ans = prediction_pred[relational_indx]
+                relational_ans = answer_array[relational_indx]
+
+                nonrelational_pred_ans = prediction_pred[nonrelational_indx]
+                nonrelational_ans = answer_array[nonrelational_indx]
+
+                nonrelational_correct = np.sum( np.argmax(nonrelational_pred_ans,axis=2) == np.argmax(nonrelational_ans,axis=2) )
+                relational_correct = np.sum( np.argmax(relational_pred_ans,axis=2) == np.argmax(relational_ans,axis=2) )
+                
                 if self.config.location:
                     p_l = p_l
                     p_l *= self.coords_std
@@ -191,12 +194,11 @@ class Evaler(object):
                     location += self.coords_mean
 
                     iou = self.IoU(p_l,location)
-                    print 'IoU:',iou
+                    print 'IoU:',np.mean(iou)
+                else:
+                    iou = None
 
-                img = batch_chunk['img'][0]
-                img *= self.img_std
-                img += self.img_mean
-                img = img.astype(np.uint8)
+                evaler.add_batch([relational_correct,len(relational_ans)], [nonrelational_correct, len(nonrelational_ans)],iou)
 
                 if self.config.visualize:
                     q = np.argmax(question_array[0][30:])
@@ -205,8 +207,8 @@ class Evaler(object):
                     obj = np.argmax(question_array[0][:15])
 
                     visualize_prediction(img, q, ans_look_up[a], ans_look_up[p_a], location[0],p_l[0],obj_look_up[obj], id=s)
+
                 self.log_step_message(s, acc, step_time)
-                evaler.add_batch(batch_chunk['id'], prediction_pred, prediction_gt)
 
         except Exception as e:
             coord.request_stop(e)
@@ -265,7 +267,7 @@ def check_data_path(path):
 def main():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_size', type=int, default=1)
+    parser.add_argument('--batch_size', type=int, default=2)
     parser.add_argument('--model', type=str, default='rn', choices=['rn', 'baseline'])
     parser.add_argument('--checkpoint_path', type=str)
     parser.add_argument('--location', action='store_true')
