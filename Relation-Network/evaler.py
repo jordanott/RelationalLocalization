@@ -21,32 +21,37 @@ class EvalManager(object):
         self._ids = []
         self._predictions = []
         self._groundtruths = []
+        self.iou = []
 
-    def add_batch(self, id, prediction, groundtruth):
+    def add_batch(self, id, prediction, groundtruth,iou):
 
         # for now, store them all (as a list of minibatch chunks)
         self._ids.append(id)
         self._predictions.append(prediction)
         self._groundtruths.append(groundtruth)
-
+        if iou is not None:
+            self.iou.append(iou)
     def report(self):
         # report L2 loss
+        self.iou = np.array(self.iou)
         log.info("Computing scores...")
         correct_prediction_nr = 0
         count_nr = 0
         correct_prediction_r = 0
         count_r = 0
-
-        for id, pred, gt in zip(self._ids, self._predictions, self._groundtruths):
+        r_iou, nr_iou = [],[]
+        for id, pred, gt, iou in zip(self._ids, self._predictions, self._groundtruths, self.iou):
             for i in range(pred.shape[0]):
                 # relational
                 if np.argmax(gt[i, :]) < NUM_COLOR:
                     count_r += 1
+                    r_iou.append(iou[0,i])
                     if np.argmax(pred[i, :]) == np.argmax(gt[i, :]):
                         correct_prediction_r += 1
                 # non-relational
                 else:
                     count_nr += 1
+                    nr_iou.append(iou[0,i])
                     if np.argmax(pred[i, :]) == np.argmax(gt[i, :]):
                         correct_prediction_nr += 1
 
@@ -56,7 +61,9 @@ class EvalManager(object):
         log.infov("Average accuracy of relational questions: {}%".format(avg_r*100))
         avg = float(correct_prediction_r+correct_prediction_nr)/(count_r+count_nr)
         log.infov("Average accuracy: {}%".format(avg*100))
-
+        log.infov('Average Relational IoU: {}'.format(np.mean(r_iou)))
+        log.infov('Average Non-relational IoU: {}'.format(np.mean(nr_iou)))
+        log.infov('Average IoU: {}'.format(np.mean(self.iou)))
 
 class Evaler(object):
 
@@ -118,6 +125,30 @@ class Evaler(object):
         else:
             log.info("Checkpoint path : %s", self.checkpoint_path)
 
+    def IoU(self,boxA, boxB):
+        boxA = boxA.astype(np.float64)
+        boxB = boxB.astype(np.float64)
+
+        # determine the (x, y)-coordinates of the intersection rectangle
+        xA = np.maximum(boxA[:,0], boxB[:,0])
+        yA = np.maximum(boxA[:,1], boxB[:,1])
+        xB = np.minimum(boxA[:,2], boxB[:,2])
+        yB = np.minimum(boxA[:,3], boxB[:,3])
+        # compute the area of intersection rectangle
+        interArea = (xB - xA + 1) * (yB - yA + 1)
+        # compute the area of both the prediction and ground-truth
+        # rectangles
+        boxAArea = (boxA[:,2] - boxA[:,0] + 1) * (boxA[:,3] - boxA[:,1] + 1)
+        boxBArea = (boxB[:,2] - boxB[:,0] + 1) * (boxB[:,3] - boxB[:,1] + 1)
+        # compute the intersection over union by taking the intersection
+        # area and dividing it by the sum of prediction + ground-truth
+        # areas - the interesection area
+        iou = interArea / (boxAArea + boxBArea - interArea)
+        # return the intersection over union value
+        iou[iou > 1] = 0
+        iou[iou < 1] = 0
+        return iou,
+
     def eval_run(self):
         # load checkpoint
         if self.checkpoint_path:
@@ -138,7 +169,7 @@ class Evaler(object):
 
         evaler = EvalManager()
         try:
-            for s in xrange(max_steps):
+            for s in xrange(10):
                 step, acc, step_time, batch_chunk, prediction_pred, prediction_gt, p_l = self.run_single_step(self.batch)
 
                 question_array = batch_chunk['q']
@@ -148,14 +179,21 @@ class Evaler(object):
                 location *= 128
                 if self.config.location:
                     p_l *= 128
-
+                    p_l = np.array([p_l[:,0]-10,p_l[:,1]-10,p_l[:,1]+10,p_l[:,0]+10]).T
+                    location = np.array([location[:,0]-10,location[:,1]-10,location[:,1]+10,location[:,0]+10]).T
+                    iou = self.IoU(location,p_l)
+                    print 'IoU:', np.mean(iou)
+                else:
+                    iou = None
                 img = batch_chunk['img'][0]
                 img *= 256
                 img = img.astype(np.uint8)
                 if self.config.visualize:
+                    location = [location[0][0],location[0][1],20,20]
+                    p_l = [p_l[0][0],p_l[0][1],20,20]
                     visualize_iqa(img, question_array, answer_array, prediction_pred, location,p_l, s)
                 self.log_step_message(s, acc, step_time)
-                evaler.add_batch(batch_chunk['id'], prediction_pred, prediction_gt)
+                evaler.add_batch(batch_chunk['id'], prediction_pred, prediction_gt, iou)
 
         except Exception as e:
             coord.request_stop(e)
@@ -214,7 +252,7 @@ def check_data_path(path):
 def main():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_size', type=int, default=1)
+    parser.add_argument('--batch_size', type=int, default=2)
     parser.add_argument('--model', type=str, default='rn', choices=['rn', 'baseline'])
     parser.add_argument('--checkpoint_path', type=str)
     parser.add_argument('--location', action='store_true')

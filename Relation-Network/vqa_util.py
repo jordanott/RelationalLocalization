@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 
 BG_COLOR = (180, 180, 150)
 COLOR = [
@@ -83,11 +84,12 @@ def visualize_iqa(img, q, a, p_a, l, p_l, id=0):
     ax.set_title(question2str(q,i))
     x_lab = answer2str(a,i) + answer2str(p_a,i,prefix='Predicted')
     ax.set_xlabel(x_lab)
-
-    circle1 = plt.Circle((l[0][0], l[0][1]), 1, color='black')
-    ax.add_patch(circle1)
-    circle2 = plt.Circle((p_l[0][0], p_l[0][1]), 3, color='white',fill=False)
-    ax.add_patch(circle2)
+    #circle1 = plt.Circle((l[0][0], l[0][1]), 1, color='black')
+    rect = patches.Rectangle((l[0],l[1]),l[2],l[3],linewidth=2,edgecolor='g',facecolor='none')
+    ax.add_patch(rect)
+    rect = patches.Rectangle((p_l[0],p_l[1]),p_l[2],p_l[3],linewidth=2,edgecolor='r',facecolor='none')
+    #circle2 = plt.Circle((p_l[0][0], p_l[0][1]), 3, color='white',fill=False)
+    ax.add_patch(rect)
 
     plt.savefig('{}.png'.format(id))
     plt.clf()
