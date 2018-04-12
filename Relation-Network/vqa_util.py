@@ -74,7 +74,7 @@ def answer2str(av,i, prefix=None):
         return '[{} Answer: {}]'.format(prefix, a_type(av))
 
 
-def visualize_iqa(img, q, a, p_a, l, p_l, id=0):
+def visualize_iqa(img, q, a, p_a, l, p_l, iou, id=0):
     #fig = plt.figure()
     #for i in range(NUM_SHAPE*NUM_Q):
     i = 0
@@ -82,7 +82,7 @@ def visualize_iqa(img, q, a, p_a, l, p_l, id=0):
     ax.imshow(img)
 
     ax.set_title(question2str(q,i))
-    x_lab = answer2str(a,i) + answer2str(p_a,i,prefix='Predicted')
+    x_lab = answer2str(a,i) + answer2str(p_a,i,prefix='Predicted') + ' IoU:' + ' {:0.2f}'.format(iou)
     ax.set_xlabel(x_lab)
     #circle1 = plt.Circle((l[0][0], l[0][1]), 1, color='black')
     rect = patches.Rectangle((l[0],l[1]),l[2],l[3],linewidth=2,edgecolor='g',facecolor='none')
