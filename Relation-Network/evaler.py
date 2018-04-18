@@ -26,17 +26,21 @@ class EvalManager(object):
         self.total_relational = 0
         self.correct_nonrelational = 0
         self.total_nonrelational = 0
-        self.iou = []
 
-    def add_batch(self,relational, nonrelational,iou):
+        self.iou_relational = []
+        self.iou_nonrelational = []
+
+    def add_batch(self,relational, nonrelational,r_iou,nr_iou):
         # for now, store them all (as a list of minibatch chunks)
         self.correct_relational += relational[0]
         self.total_relational += relational[1]
         self.correct_nonrelational += nonrelational[0]
         self.total_nonrelational += nonrelational[1]
 
-        if iou is not None:
-            self.iou.append(iou)
+        if r_iou:
+            self.iou_relational.extend(r_iou)
+        if nr_iou:
+            self.iou_nonrelational.extend(nr_iou)
 
     def report(self):
         avg_nr = self.correct_nonrelational / float(self.total_nonrelational)
@@ -45,7 +49,9 @@ class EvalManager(object):
         log.infov("Average accuracy of relational questions: {}%".format(avg_r*100))
         avg = float(self.correct_nonrelational+self.correct_relational)/(self.total_relational+self.total_nonrelational)
         log.infov("Average accuracy: {}%".format(avg*100))
-        log.infov('Average IoU: {}'.format(np.mean(self.iou)))
+        log.infov('Average non-relational IoU: {}'.format(np.mean(self.iou_nonrelational)))
+        log.infov('Average relational IoU: {}'.format(np.mean(self.iou_relational)))
+        log.infov('Average IoU: {}'.format(np.mean([self.iou_relational,self.iou_nonrelational])))
 
 class Evaler(object):
 
@@ -117,10 +123,10 @@ class Evaler(object):
         boxA = boxA.astype(np.float64)
         boxB = boxB.astype(np.float64)
 
-        boxA[:,2] = boxA[:,1] + boxA[:,2]
-        boxA[:,3] = boxA[:,0] + boxA[:,3]
-        boxB[:,2] = boxB[:,1] + boxB[:,2]
-        boxB[:,3] = boxB[:,0] + boxB[:,3]
+        boxA[:,2] = boxA[:,0] + boxA[:,2]
+        boxA[:,3] = boxA[:,1] + boxA[:,3]
+        boxB[:,2] = boxB[:,0] + boxB[:,2]
+        boxB[:,3] = boxB[:,1] + boxB[:,3]
         # determine the (x, y)-coordinates of the intersection rectangle
         xA = np.maximum(boxA[:,0], boxB[:,0])
         yA = np.maximum(boxA[:,1], boxB[:,1])
@@ -138,7 +144,7 @@ class Evaler(object):
         iou = interArea / (boxAArea + boxBArea - interArea)
         # return the intersection over union value
         iou[iou > 1] = 0
-        iou[iou < 1] = 0
+        iou[iou < 0] = 0
         return iou
 
     def eval_run(self):
@@ -172,8 +178,8 @@ class Evaler(object):
                 img += self.img_mean
                 img = img.astype(np.uint8)
 
-                nonrelational_indx = np.argmax(question_array[:,30:]) < 2
-                relational_indx = np.argmax(question_array[:,30:]) > 1
+                nonrelational_indx = np.argmax(question_array[:,30:],axis=1) < 2
+                relational_indx = np.argmax(question_array[:,30:],axis=1) > 1
 
                 relational_pred_ans = prediction_pred[relational_indx]
                 relational_ans = answer_array[relational_indx]
@@ -181,9 +187,9 @@ class Evaler(object):
                 nonrelational_pred_ans = prediction_pred[nonrelational_indx]
                 nonrelational_ans = answer_array[nonrelational_indx]
 
-                nonrelational_correct = np.sum( np.argmax(nonrelational_pred_ans,axis=2) == np.argmax(nonrelational_ans,axis=2) )
-                relational_correct = np.sum( np.argmax(relational_pred_ans,axis=2) == np.argmax(relational_ans,axis=2) )
-                
+                nonrelational_correct = np.sum( np.argmax(nonrelational_pred_ans,axis=1) == np.argmax(nonrelational_ans,axis=1) )
+                relational_correct = np.sum( np.argmax(relational_pred_ans,axis=1) == np.argmax(relational_ans,axis=1) )
+
                 if self.config.location:
                     p_l = p_l
                     p_l *= self.coords_std
@@ -194,11 +200,15 @@ class Evaler(object):
                     location += self.coords_mean
 
                     iou = self.IoU(p_l,location)
+                    print iou
+                    r_iou = iou[relational_indx].tolist()
+                    nr_iou = iou[nonrelational_indx].tolist()
+                    print r_iou,nr_iou,relational_indx, nonrelational_indx
                     print 'IoU:',np.mean(iou)
                 else:
-                    iou = None
+                    r_iou, nr_iou = 0,0
 
-                evaler.add_batch([relational_correct,len(relational_ans)], [nonrelational_correct, len(nonrelational_ans)],iou)
+                evaler.add_batch([relational_correct,len(relational_ans)], [nonrelational_correct, len(nonrelational_ans)],r_iou,nr_iou)
 
                 if self.config.visualize:
                     q = np.argmax(question_array[0][30:])
@@ -267,7 +277,7 @@ def check_data_path(path):
 def main():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_size', type=int, default=2)
+    parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--model', type=str, default='rn', choices=['rn', 'baseline'])
     parser.add_argument('--checkpoint_path', type=str)
     parser.add_argument('--location', action='store_true')
