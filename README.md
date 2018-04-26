@@ -81,7 +81,7 @@ And the possible answer is a fixed length one-hot vector whose elements represen
 ## Results
 
 | | RN (Ans, Loc) | Baseline (Ans, Loc) | RN (Ans) |
-| --- | --- | --- | --- | --- |
+| --- | --- | --- | --- |
 | Non-relational question | 90.63% | 40.65% | **90.64%** |
 | Relational question | 20.44% | 0.00% | **20.48%** |
 | Overall Acc | 60.86% | 23.41% | **60.88%** |
