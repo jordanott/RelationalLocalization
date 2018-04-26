@@ -21,10 +21,12 @@ where *o* represents inidividual object while *f* and *g* are functions dealing 
 <p align="center">
     <img src="figure/RN.png" height="350"/>
 </p>
+(Santoro et. al, 2017)  
 
-In addition to the RN model, **a baseline model** which consists of convolutional layers followed by MLPs is also provided in this implementation.
 
-### Sort-of-CLEVR Cube World
+In addition to the RN model, **a baseline model** which consists of convolutional layers followed by MLPs is also provided in this implementation.  
+
+## Sort-of-CLEVR Cube World  
 
 To verify the effectiveness of RNs, a synthesized **VQA dataset** is proposed in the paper named Sort-of-CLEVR. The dataset consists of paired questions and answers as well as images containing colorful shapes.
 
@@ -57,14 +59,6 @@ And the possible answer is a fixed length one-hot vector whose elements represen
 
 *[red, blue, green, yellow, cyan, magenta, circle, rectangle, yes, no]*
 
-**File format**
-
-Generated files use HDF5 file format. Each data point contains an *image*, an one-hot vector *q* encoding a question, and an one-hot vector *a* encoding the corresponding answer.
-
-Note that this implementation only follows the main idea of the original paper while differing a lot in implementation details such as model architectures, hyperparameters, applied optimizer, etc. Also, the design of Sort-of-CLEVR only follows the high-level ideas of the one proposed in the orginal paper.
-
-\*This code is still being developed and subject to change.
-
 ### Intersection over Union (IoU)
 
 #TODO
@@ -82,6 +76,18 @@ Note that this implementation only follows the main idea of the original paper w
 
 # Visual Genome Dataset
 
+## Dataset
+
+## Results
+
+| | RN (Ans, Loc) | Baseline (Ans, Loc) | RN (Ans) |
+| --- | --- | --- | --- | --- |
+| Non-relational question | 90.63% | 40.65% | **90.64%** |
+| Relational question | 20.44% | 0.00% | **20.48%** |
+| Overall Acc | 60.86% | 23.41% | **60.88%** |
+| Non-relational IoU | **0.10** | 0.09 | ----------- |
+| Relational IoU | **0.09** | 0.08 | ----------- |
+| Overall IoU | **0.10** | 0.09 | ----------- |
 
 ## Related works
 
