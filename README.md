@@ -14,6 +14,10 @@ Question: What is to the left of the tree?
 
 ### Relation Networks
 
+<p align="center">
+    <img src="figure/relation_net.png" height="350"/>
+</p>
+
 Relational reasoning is an essential component of intelligent systems. To this end, Relation Networks (RNs) are proposed to solve problems hinging on inherently relational concepts. To be more specific, RN is a composite function:
 
 <p align="center">
@@ -23,14 +27,9 @@ Relational reasoning is an essential component of intelligent systems. To this e
 where *o* represents inidividual object while *f* and *g* are functions dealing with relational reasoning which are implemented as MLPs. Note that objects mentioned here are not necessary to be real objects; instead, they could consist of the background, particular physical objects, textures, conjunctions of physical objects, etc. In the implementation, objects are defined by convoluted features. The model architecture proposed to solve Visual Question Answering (VQA) problems is as follows.
 
 <p align="center">
-    <img src="figure/relation_net.png" height="350"/>
-</p>
-
-<p align="center">
     <img src="figure/RN.png" height="350"/>
 </p>
 (Santoro et. al, 2017)  
-
 
 In addition to the RN model, **a baseline model** which consists of convolutional layers followed by MLPs is also provided in this implementation.  
 
