@@ -6,7 +6,11 @@ Jordan Ott and Josh Graves
 
 ### Relational Questions
 
-[examples of rq's]
+Question: Is there a tree in the image?  
+![](figure/single_tree.jpg)
+
+Question: What is to the left of the tree?  
+![](figure/trees_and_people.jpg)
 
 ### Relation Networks
 
@@ -17,6 +21,10 @@ Relational reasoning is an essential component of intelligent systems. To this e
 </p>
 
 where *o* represents inidividual object while *f* and *g* are functions dealing with relational reasoning which are implemented as MLPs. Note that objects mentioned here are not necessary to be real objects; instead, they could consist of the background, particular physical objects, textures, conjunctions of physical objects, etc. In the implementation, objects are defined by convoluted features. The model architecture proposed to solve Visual Question Answering (VQA) problems is as follows.
+
+<p align="center">
+    <img src="figure/relation_net.png" height="350"/>
+</p>
 
 <p align="center">
     <img src="figure/RN.png" height="350"/>
@@ -61,7 +69,7 @@ And the possible answer is a fixed length one-hot vector whose elements represen
 
 ### Intersection over Union (IoU)
 
-#TODO
+![](figure/iou_examples.png)
 
 ## Results
 
@@ -81,22 +89,44 @@ And the possible answer is a fixed length one-hot vector whose elements represen
 ![](figure/Cube/30.png)  |  ![](figure/Cube/29.png)
 
 # Visual Genome Dataset
+![](figure/vg_home.png)
 
 ## Dataset
+107,000 images  
+
+**Desired Objects**
+* car
+* chair
+* door
+* leaves
+* light
+* person
+* plate
+* pole
+* shirt
+* sign
+* table
+* train
+* tree
+* wall
+* window
 
 **Non-relational questions**
 
-* Where is the *object*?
-* Is the *object* on the left?
+* **Where is the *object*?**
+* **Is the *object* on the left?**
 
 **Relational questions**
 
-* What object is closest to the *object*?
-* What object is farthest from the *object*?
+* Is *object1* on the left of *object2*?
+* What object is in between *object1* and *object2*?
+* **What object is closest to the *object*?**
+* **What object is farthest from the *object*?**
+* What *object1* is closest to *object2*?
+* What *object1* is farthest from *object2*?
 
-Solarized dark             |  Solarized Ocean
-:-------------------------:|:-------------------------:
-![](https://...Ocean.png)  |  ![](https://...Dark.png)
+![](figure/iron_man.jpg)
+
 ## Results
 
 | | RN (Ans, Loc) | Baseline (Ans, Loc) | RN (Ans) |
