@@ -77,7 +77,9 @@ And the possible answer is a fixed length one-hot vector whose elements represen
 # Visual Genome Dataset
 
 ## Dataset
-
+Solarized dark             |  Solarized Ocean
+:-------------------------:|:-------------------------:
+![](https://...Ocean.png)  |  ![](https://...Dark.png)
 ## Results
 
 | | RN (Ans, Loc) | Baseline (Ans, Loc) | RN (Ans) |
@@ -88,6 +90,26 @@ And the possible answer is a fixed length one-hot vector whose elements represen
 | Non-relational IoU | **0.10** | 0.09 | ----------- |
 | Relational IoU | **0.09** | 0.08 | ----------- |
 | Overall IoU | **0.10** | 0.09 | ----------- |
+
+## Good Results  
+
+![](figure/VG/results/good/22.png)  |  ![](figure/VG/results/good/68.png)
+:-------------------------:|:-------------------------:
+![](figure/VG/results/good/76.png)  |  ![](figure/VG/results/good/90.png)
+:-------------------------:|:-------------------------:
+![](figure/VG/results/good/209.png)  |  ![](figure/VG/results/good/281.png)
+:-------------------------:|:-------------------------:
+![](figure/VG/results/good/296.png)  |
+
+## Not so Good Results  
+
+![](figure/VG/results/bad_data/1.png)  |  ![](figure/VG/results/bad_data/7.png)
+:-------------------------:|:-------------------------:
+![](figure/VG/results/bad_data/33.png)  |  ![](figure/VG/results/bad_data/35.png)
+:-------------------------:|:-------------------------:
+![](figure/VG/results/bad_data/242.png)  |  ![](figure/VG/results/bad_data/246.png)
+:-------------------------:|:-------------------------:
+![](figure/VG/results/bad_data/252.png)  |  ![](figure/VG/results/bad_data/299.png)
 
 ## Related works
 
