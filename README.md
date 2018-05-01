@@ -74,9 +74,26 @@ And the possible answer is a fixed length one-hot vector whose elements represen
 | Relational IoU | **0.17** | 0.09 | ----------- | ----------- |
 | Overall IoU | **0.43** | 0.10 | ----------- | ----------- |
 
+![](figure/Cube/4.png)  |  ![](figure/Cube/15.png)
+:-------------------------:|:-------------------------:
+![](figure/Cube/21.png)  |  ![](figure/Cube/23.png)
+![](figure/Cube/47.png)  |  ![](figure/Cube/27.png)
+![](figure/Cube/30.png)  |  ![](figure/Cube/29.png)
+
 # Visual Genome Dataset
 
 ## Dataset
+
+**Non-relational questions**
+
+* Where is the *object*?
+* Is the *object* on the left?
+
+**Relational questions**
+
+* What object is closest to the *object*?
+* What object is farthest from the *object*?
+
 Solarized dark             |  Solarized Ocean
 :-------------------------:|:-------------------------:
 ![](https://...Ocean.png)  |  ![](https://...Dark.png)
@@ -96,9 +113,7 @@ Solarized dark             |  Solarized Ocean
 ![](figure/VG/results/good/22.png)  |  ![](figure/VG/results/good/68.png)
 :-------------------------:|:-------------------------:
 ![](figure/VG/results/good/76.png)  |  ![](figure/VG/results/good/90.png)
-:-------------------------:|:-------------------------:
 ![](figure/VG/results/good/209.png)  |  ![](figure/VG/results/good/281.png)
-:-------------------------:|:-------------------------:
 ![](figure/VG/results/good/296.png)  |
 
 ## Not so Good Results  
@@ -106,12 +121,10 @@ Solarized dark             |  Solarized Ocean
 ![](figure/VG/results/bad_data/1.png)  |  ![](figure/VG/results/bad_data/7.png)
 :-------------------------:|:-------------------------:
 ![](figure/VG/results/bad_data/33.png)  |  ![](figure/VG/results/bad_data/35.png)
-:-------------------------:|:-------------------------:
 ![](figure/VG/results/bad_data/242.png)  |  ![](figure/VG/results/bad_data/246.png)
-:-------------------------:|:-------------------------:
 ![](figure/VG/results/bad_data/252.png)  |  ![](figure/VG/results/bad_data/299.png)
 
-## Related works
+## Sources
 
 * [A Simple Neural Network Module for Relational Reasoning](https://arxiv.org/abs/1706.01427)
 * [Visual Interaction Networks](https://arxiv.org/abs/1706.01433) by Watters et. al.
